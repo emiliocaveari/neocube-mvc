@@ -1,0 +1,16 @@
+{
+    "name": "emiliocmarques/neocube-mvc",
+    "description": "NeoCube MVC",
+    "autoload": {
+        "psr-4": {
+            "NeoCube\\": "src/NeoCube/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Emilio C Marques",
+            "email": "emiliocaveari@gmail.com"
+        }
+    ],
+    "require": {}
+}
