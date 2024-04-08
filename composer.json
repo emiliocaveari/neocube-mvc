@@ -1,7 +1,6 @@
 {
     "name": "emiliocmarques/neocube-mvc",
     "description": "NeoCube MVC",
-    "type": "project",
     "keywords": ["neocube","mvc"],
     "license": "MIT",
     "autoload": {
