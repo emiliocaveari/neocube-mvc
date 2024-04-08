@@ -2,7 +2,6 @@
 
 namespace NeoCube;
 
-use NeoCube\Error\ErrorType;
 use NeoCube\Render\RenderInterface;
 use NeoCube\Render\ViewHtml;
 use NeoCube\View;

@@ -391,10 +391,8 @@ class Form {
     public function writeElement(array|string $identify,string $pos='') :string {
 
         //--Verifica se existe constante definida para renderizar o formulário
-        if ( empty($this->FormRender) ){
-            if (defined('NEOCUBE_CLASS_FORM_RENDER')) $this->FormRender = NEOCUBE_CLASS_FORM_RENDER;
-            else                                      $this->FormRender = Render::class;
-        }
+        if ( empty($this->FormRender) )
+            $this->FormRender = Env::getValue('CLASS_FORM_RENDER') ?: Render::class;
 
         //--Retorno renderizado dos elementos
         $return = '';

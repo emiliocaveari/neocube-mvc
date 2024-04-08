@@ -12,7 +12,9 @@ class Mysql implements AdapterInterface {
         if (!isset(self::$instance[$database])) {
             $dsn = 'mysql:host='.$db['host'].';dbname='.$db['dbname'];
             if ( isset($db['port']) ) $dsn .= ";port={$db['port']}";
-            self::$instance[$database] = new PDO($dsn,$db['username'],$db['password'],isset($db['options'])?$db['options']:NULL);
+            $PDO = new PDO($dsn,$db['username'],$db['password'],$db['options']??null);
+
+            self::$instance[$database] = $PDO;
         }
         return self::$instance[$database];
     }

@@ -71,7 +71,7 @@ class Session {
                     if ( is_array($msg) ){
                         $view->setData($msg);
                     } else {
-                        $view->setData('message',$msg);
+                        $view->setData('MESSAGE',$msg);
                     }
                     $htmlReturn .= $view->render();
                 }
