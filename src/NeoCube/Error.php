@@ -8,10 +8,10 @@ use NeoCube\Error\ErrorType;
 
 class Error extends ErrorAbstract {
 
-    public function onError(){
+    public function onError() {
         $error = $this->error;
         $type  = $this->type;
-        if ( ErrorType::SHUTDOWN == $type ) return null;
+        if (ErrorType::SHUTDOWN == $type) return null;
         if (Application::isEnvironment(Application::ENVIRONMENT_PRODUCTION)) {
             ob_clean();
             header('Content-Type: text/plain');
@@ -27,5 +27,4 @@ class Error extends ErrorAbstract {
             echo "PHP " . PHP_VERSION . " (" . PHP_OS . ")\n";
         }
     }
-
 }

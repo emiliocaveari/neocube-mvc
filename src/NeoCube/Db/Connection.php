@@ -34,8 +34,17 @@ class Connection {
             'port' => 'DATABASE_PORT',
             'option' => 'DATABASE_OPTION'
         ])) {
-            self::$connections[$values['name']] = $values;
-            return self::$connections;
+            if (
+                $values['name'] and
+                $values['adapter'] and
+                $values['dbname'] and
+                $values['host'] and
+                $values['username'] and
+                $values['password']
+            ) {
+                self::$connections[$values['name']] = $values;
+                return self::$connections;
+            }
         }
 
         if (defined('NEOCUBE_DATABASE_CONNECTIONS')) {
