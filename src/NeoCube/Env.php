@@ -81,14 +81,12 @@ class Env {
 
     static private function processName(string $name) {
         return strtoupper(trim($name));
-        // $name = strtoupper(trim($name));
-        // return ( substr($name,0,8) != 'NEOCUBE_' )
-        //     ? 'NEOCUBE_' . $name
-        //     : $name;
     }
 
     static private function processValue(string $value) {
         $value = trim($value);
+        if (substr($value, 0, 2) == './')
+            $value = static::$path . substr($value, 1);
         $processValue = match (true) {
             is_numeric($value) => (filter_var($value, FILTER_VALIDATE_INT) ?: (float) $value),
 

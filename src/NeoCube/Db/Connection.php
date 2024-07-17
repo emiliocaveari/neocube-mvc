@@ -20,7 +20,7 @@ class Connection {
         if (self::$connections) return self::$connections;
 
         if ($json = Env::get('DATABASE_JSON_CONFIG')) {
-            self::$connections = File::readJson(Env::getPath() . '/' . $json);
+            self::$connections = File::readJson($json);
             return self::$connections;
         }
 
