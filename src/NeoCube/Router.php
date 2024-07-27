@@ -131,6 +131,10 @@ class Router {
         }
     }
 
+    protected function urlToControllerClass(array $url): string {
+        return Strings::toCamelCase(implode('\\', $url));
+    }
+
 
     //--FINAL PUBLIC FUNCTIONS--//
     //--------------------------//
@@ -229,7 +233,7 @@ class Router {
         //--Verifica se existe Controller
         while (count($urlExplode)) {
 
-            $auxController = Strings::toCamelCase(strtolower(implode('\\', $urlExplode)), ['_', '-']);
+            $auxController = $this->urlToControllerClass($urlExplode);
 
             //--Verifica se existe o controller
             $classLoad = sprintf($this->controllerClassLoad, $auxController);
@@ -244,7 +248,7 @@ class Router {
 
         //--Se nenhum controller encontrado, seta como index
         if (is_null($controller)) {
-            $classLoad = sprintf($this->controllerClassLoad, 'index');
+            $classLoad = sprintf($this->controllerClassLoad, $this->urlToControllerClass(['index']));
             if (class_exists($classLoad)) {
                 $controller = 'index';
             } else {
@@ -260,7 +264,7 @@ class Router {
         //--Tratando array de actions
         if (count($actions)) {
             //--seleciona action
-            $action  = Strings::toCamelCase(array_shift($actions), ['_', '-']);
+            $action  = Strings::toCamelCase(array_shift($actions));
             //--verifica se o metodo da action existe
             if (method_exists($Controller, $action . '_')) $Controller->setAction($action);
             else array_unshift($actions, $action);

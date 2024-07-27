@@ -14,19 +14,20 @@ abstract class Controller {
     private $_controller;
     private $_values = [];
 
-    public function _init(){}
+    public function _init() {
+    }
 
-    final public function setController($controller) :void {
-        $this->_controller = strtolower($controller);
+    final public function setController(string $controller): void {
+        $this->_controller = $controller;
     }
-    final public function setAction($action) :void {
-        $this->_action = strtolower($action);
+    final public function setAction(string $action): void {
+        $this->_action = $action;
     }
-    final public function setValues($values) :void {
+    final public function setValues($values): void {
         $this->_values = $values;
     }
 
-    final public function getController($url=false)  {
+    final public function getController($url = false) {
         return $this->_controller;
     }
     final public function getAction() {
@@ -36,31 +37,29 @@ abstract class Controller {
         return $this->_values;
     }
 
-    protected function getViewPath(){
+    protected function getViewPath() {
         //--View padrão do controller localizada na mesma pasta dentro de Views
         $reflector = new \ReflectionClass($this);
         return dirname($reflector->getFileName()) . '/Views/';
     }
 
 
-    final public function execute() :RenderInterface {
+    final public function execute(): RenderInterface {
         //--View relacionada ao controller
         if (!$this->view) $this->view = new View();
-        $this->view->setController($this->_controller,$this->_action,$this->getViewPath());
-        
+        $this->view->setController($this->_controller, $this->_action, $this->getViewPath());
+
         //--Executando ações
-        $action = $this->_action.'_';
+        $action = $this->_action . '_';
         $this->_init();
         return $this->render($this->$action(...$this->_values));
     }
 
 
-    public function render(mixed $actionData) :RenderInterface {
-        if ( $actionData instanceof RenderInterface)
+    public function render(mixed $actionData): RenderInterface {
+        if ($actionData instanceof RenderInterface)
             return $actionData;
         //--Retorna a rederização da view por padrão
         return new ViewHtml($this->view);
     }
-
-
 }
