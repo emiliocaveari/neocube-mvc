@@ -459,47 +459,38 @@ class Mapper {
         $dados = $this->setCols($cols)->fetchAll();
 
         if ($dados) {
-            static::formatCol($key);
+            $key = $this->Query::formatCol($key);
             foreach ($dados as $value) {
                 $key_value = $value[$key];
                 if (is_array($option)) {
                     $option_desc = array();
                     foreach ($option as $c) {
-                        static::formatCol($c);
-                        $option_desc[] = $value[$c];
+                        $option_desc[] = $value[$this->Query::formatCol($c)];
                     }
                     $letselect['option'] = implode($params['separator'], $option_desc);
                 } else {
-                    static::formatCol($option);
-                    $letselect['option'] = $value[$option];
+                    $letselect['option'] = $value[$this->Query::formatCol($option)];
                 }
 
                 if (isset($params['attr'])) {
-                    foreach ($params['attr'] as $k => $c) {
-                        static::formatCol($c);
-                        $letselect[$k] = $value[$c];
-                    }
+                    foreach ($params['attr'] as $k => $c)
+                        $letselect[$k] = $value[$this->Query::formatCol($c)];
                 }
 
                 if (isset($params['optgroup']['label'])) {
                     $label = $params['optgroup']['label'];
                     if (is_array($label)) {
                         $option_desc = array();
-                        foreach ($label as $c) {
-                            static::formatCol($c);
-                            $option_desc[] = $value[$c];
-                        }
+                        foreach ($label as $c)
+                            $option_desc[] = $value[$this->Query::formatCol($c)];
                         $label = implode($params['separator'], $option_desc);
                     } else {
-                        static::formatCol($label);
-                        $label = $value[$label];
+                        $label = $value[$this->Query::formatCol($label)];
                     }
 
                     if (isset($params['optgroup']['attr']) and is_array($params['optgroup']['attr'])) {
-                        foreach ($params['optgroup']['attr'] as $k => $c) {
-                            static::formatCol($c);
-                            $select['optgroup'][$label]['attr'][$k] = $value[$c];
-                        }
+                        foreach ($params['optgroup']['attr'] as $k => $c)
+                            $select['optgroup'][$label]['attr'][$k] = $value[$this->Query::formatCol($c)];
                         $select['optgroup'][$label]['value'][$key_value] = $letselect;
                     } else {
                         $select['optgroup'][$label][$key_value] = $letselect;
@@ -508,14 +499,5 @@ class Mapper {
             }
         }
         return $select;
-    }
-
-    static private function formatCol(&$col): void {
-        $point = strrpos($col, '.');
-        if ($point !== false) $col = substr($col, $point + 1);
-        $as = strrpos(strtolower($col), ' as ');
-        if ($as !== false) {
-            $col = str_replace(' ', '', substr($col, $as + 3));
-        }
     }
 }

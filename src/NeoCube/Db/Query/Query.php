@@ -72,7 +72,12 @@ class Query {
             else
                 $cols = explode(',', $cols);
         }
-        $this->params->cols = array_merge($this->params->cols, $cols);
+
+        foreach ($cols as $query) {
+            $c = static::formatCol($query);
+            if (!isset($this->params->cols[$c])) $this->params->cols[$c] = $query;
+        }
+
         return $this;
     }
 
@@ -176,5 +181,16 @@ class Query {
             default:
                 return false;
         }
+    }
+
+
+    final static public function formatCol(string $col): string {
+        $point = strrpos($col, '.');
+        if ($point !== false) $col = substr($col, $point + 1);
+        $as = strrpos(strtolower($col), ' as ');
+        if ($as !== false) {
+            $col = str_replace(' ', '', substr($col, $as + 3));
+        }
+        return $col;
     }
 }
