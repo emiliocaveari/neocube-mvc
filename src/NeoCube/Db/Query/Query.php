@@ -127,6 +127,7 @@ class Query {
         if (!is_array($data)) {
             $this->params->onDuplicateKey = $data;
         } else {
+            $this->params->onDuplicateKey = [];
             foreach ($data as $key => $val) {
                 if ($val === 0 or $val === '0' or !empty($val) or is_null($val)) {
                     $this->params->onDuplicateKey[$key] = $val;

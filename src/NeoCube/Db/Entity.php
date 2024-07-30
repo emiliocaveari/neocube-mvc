@@ -10,7 +10,7 @@ class Entity {
     protected ?DbMapper $mapper;
     protected array     $data = [];
 
-    public function __construct(?array $data=null){
+    public function __construct(?array $data = null) {
         if ($data) $this->data = $data;
     }
 
@@ -19,7 +19,7 @@ class Entity {
      * @param $name
      * @param $value
      */
-    public function __set(string $name, $value):void {
+    public function __set(string $name, $value): void {
         $setName = Strings::toCamelCase("set_$name");
         if (method_exists($this, $setName)) $this->$setName($value);
         else $this->data[$name] = $value;
@@ -29,7 +29,7 @@ class Entity {
      * @param $name
      * @return bool
      */
-    public function __isset($name):bool{
+    public function __isset($name): bool {
         return isset($this->data[$name]);
     }
 
@@ -38,20 +38,19 @@ class Entity {
      * @return string|null
      */
     public function __get($name) {
-        
-        $camelName = Strings::toCamelCase($name);
+
+        $camelName = Strings::toCamelCase($name, '_');
         if (method_exists($this, $camelName)) return $this->$camelName();
         if (method_exists($this, $name))      return $this->$name();
-        
+
         //--findo to getName
-        $getName = Strings::toCamelCase("get_$name");
+        $getName = Strings::toCamelCase("get_$name", '_');
         if (method_exists($this, $getName)) return $this->$getName($name);
 
-        //--firstName TO first_name
-        $name_under = Strings::reverseCamelCase($name);
-        return isset($this->data[$name]) 
-            ? $this->data[$name] 
+        //--findName TO find_name
+        $name_under = Strings::reverseCamelCase($name, '_');
+        return isset($this->data[$name])
+            ? $this->data[$name]
             : ($this->data[$name_under] ?? null);
     }
-
 }
