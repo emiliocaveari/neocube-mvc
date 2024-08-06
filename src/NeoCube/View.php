@@ -22,7 +22,6 @@ class View {
 
     private ?string $_renderized = null;
 
-
     //--Construtor --//
     final public function __construct(?string $view = '', null|string|array $path = null, array $data = []) {
         $this->_view = $view;
@@ -217,7 +216,6 @@ class View {
         return $this->_renderized;
     }
 
-
     //--funcoes privadas da view----------------------------------------------//
     //------------------------------------------------------------------------//
 
@@ -240,10 +238,6 @@ class View {
                 require $viewFile;
                 $this->_renderized = ob_get_contents();
                 ob_end_clean();
-
-                if (strpos($this->_renderized, '{PUBLIC_DIR}') !== false) {
-                    $this->_renderized = str_replace('{PUBLIC_DIR}', Router::getPublicUrl(), $this->_renderized);
-                }
 
                 //--Se a renderização tem layout ou exportar as tags
                 if ($this->_layout !== false or $tagsExport) {
@@ -284,9 +278,6 @@ class View {
                 require $layoutFile;
                 $this->_renderized = ob_get_contents();
                 ob_end_clean();
-                if (strpos($this->_renderized, '{PUBLIC_DIR}') !== false) {
-                    $this->_renderized = str_replace('{PUBLIC_DIR}', Router::getPublicUrl(), $this->_renderized);
-                }
             } else {
                 exit('Layout "' . $this->_layout . '" nao encontrado em ' . $this->_path['layout']);
             }

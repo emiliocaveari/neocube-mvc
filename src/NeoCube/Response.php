@@ -12,7 +12,7 @@ class Response {
         500 => '500 Internal Server Error'
     );
 
-    static public function getContentType($filename) {
+    static public function getContentType(string $filename): string {
         $mime_types = array(
             'txt' => 'text/plain',
             'htm' => 'text/html',
@@ -67,40 +67,38 @@ class Response {
             'odt' => 'application/vnd.oasis.opendocument.text',
             'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
         );
-        $ext = explode('.',$filename);
+        $ext = explode('.', $filename);
         $ext = array_pop($ext);
         $ext = strtolower($ext);
         if (array_key_exists($ext, $mime_types)) {
             return $mime_types[$ext];
-        }
-        else if ( $mimetype = mime_content_type($filename) ) {
+        } else if ($mimetype = mime_content_type($filename)) {
             return $mimetype;
-        }
-        else {
+        } else {
             return 'application/octet-stream';
         }
     }
 
-    static public function json($objJson, $code=200, $clean=false) {
+    static public function json(mixed $objJson, int $code = 200, bool $clean = false): void {
         if ($clean) ob_clean();
         header('Content-Type: application/json');
         http_response_code($code);
-        header('status: '.$code);
+        header('status: ' . $code);
         echo json_encode($objJson);
         exit(0);
     }
 
-    static public function text($text, $code=200, $clean=false) {
+    static public function text(string $text, int $code = 200, bool $clean = false): void {
         if ($clean) ob_clean();
         header('Content-Type: text/plain');
         http_response_code($code);
-        header('status: '.$code);
+        header("status: {$code}");
         echo $text;
         exit(0);
     }
 
 
-    static public function html($text,$clean=false) {
+    static public function html(string $text, bool $clean = false): void {
         if ($clean) ob_clean();
         header('Content-Type: text/html');
         http_response_code(200);
@@ -109,14 +107,13 @@ class Response {
         exit(0);
     }
 
-    static public function file($file,$contentType=null, $code=200, $clean=false) {
+    static public function file($file, $contentType = null, int $code = 200, $clean = false): void {
         if (is_null($contentType)) $contentType = self::getContentType($file);
         if ($clean) ob_clean();
         header("Content-Type: {$contentType}");
         http_response_code($code);
-        header('status: '.$code);
+        header("status: {$code}");
         readfile($file);
         exit(0);
     }
-
 }
