@@ -7,7 +7,7 @@ use NeoCube\Controller;
 use NeoCube\Request;
 use NeoCube\Error\ErrorType;
 use NeoCube\Helper\Strings;
-use NeoCube\Render\RenderInterface;
+use NeoCube\View\ViewRenderInterface;
 
 class Router {
 
@@ -18,7 +18,7 @@ class Router {
     static protected array $url = [];
     static protected string $publicDir = '/';
 
-    protected RenderInterface $outView;
+    protected ViewRenderInterface $outView;
     protected Controller $Controller;
 
     protected array $routes = array();

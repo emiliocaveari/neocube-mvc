@@ -2,8 +2,8 @@
 
 namespace NeoCube;
 
-use NeoCube\Render\RenderInterface;
-use NeoCube\Render\ViewHtml;
+use NeoCube\View\ViewRenderInterface;
+use NeoCube\View\RenderHtml;
 use NeoCube\View;
 
 abstract class Controller {
@@ -43,7 +43,7 @@ abstract class Controller {
     }
 
 
-    final public function execute(): RenderInterface {
+    final public function execute(): ViewRenderInterface {
         if (!$this->view) $this->view = new View();
         $this->view->setController($this->_controller, $this->_action, $this->getViewPath());
 
@@ -53,9 +53,9 @@ abstract class Controller {
     }
 
 
-    public function render(mixed $actionData): RenderInterface {
-        if ($actionData instanceof RenderInterface)
+    public function render(mixed $actionData): ViewRenderInterface {
+        if ($actionData instanceof ViewRenderInterface)
             return $actionData;
-        return new ViewHtml($this->view);
+        return new RenderHtml($this->view);
     }
 }

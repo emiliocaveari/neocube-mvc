@@ -2,9 +2,9 @@
 
 namespace NeoCube\Form;
 
-use NeoCube\Form\RenderInterface;
+use NeoCube\Form\FormRenderInterface;
 
-class FormRender implements RenderInterface {
+class FormRender implements FormRenderInterface {
 
     static public function render(array | ElementAbstract $elements): string {
 
