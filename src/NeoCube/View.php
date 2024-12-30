@@ -2,8 +2,10 @@
 
 namespace NeoCube;
 
+use Closure;
 use NeoCube\Error\ErrorType;
-use \NeoCube\Router;
+use NeoCube\Router;
+use NeoCube\View\Tag\ScriptTag;
 
 class View {
 
@@ -31,7 +33,6 @@ class View {
                 $this->_path['view'] = $path['view'] ?? $path[0];
                 $this->_path['layout'] = $path['layout'] ?? $path[1];
             }
-            // } else if (defined('NEOCUBE_VIEW_PATH') and defined('NEOCUBE_LAYOUT_PATH')){
         } else if ($paths = Env::getValues(['view' => 'VIEW_PATH', 'layout' => 'LAYOUT_PATH'])) {
             $this->_path['view']   = $paths['view'] ?: '';
             $this->_path['layout'] = $paths['layout'] ?: '';
@@ -40,13 +41,13 @@ class View {
     }
 
     //--Controllers--//
-    final public function setController($controller, $action, $view_path) {
+    final public function setController(string $controller, string $action, string $view_path) {
         $this->_controller   = $controller;
         $this->_action       = $action;
         $this->_view         = $action;
         $this->_path['view'] = $view_path;
     }
-    final public function setAction($action) {
+    final public function setAction(string $action) {
         $this->_view   = $action;
         $this->_action = $action;
     }
@@ -59,7 +60,7 @@ class View {
 
 
     //--Set--//
-    final public function setData($data, $value = null) {
+    final public function setData(mixed $data, mixed $value = null) {
         if (is_array($data)) {
             $this->_data = array_merge($this->_data, $data);
         } else {
@@ -67,11 +68,11 @@ class View {
         }
         return $this;
     }
-    final public function setLayout($layout, $path = false) {
+    final public function setLayout(string $layout, string|null|false $path = false) {
         $this->_layout = $layout;
         if ($path !== false) $this->_path['layout'] = $path ?: Env::getValue('LAYOUT_PATH');
     }
-    final public function setView($view, $path = false) {
+    final public function setView(string $view, string|null|false $path = false) {
         $this->_view = $view;
         if ($path !== false) $this->_path['view'] = $path ?: Env::getValue('VIEW_PATH');
     }
@@ -105,49 +106,21 @@ class View {
         $this->_data   = [];
     }
 
-    //--Tratamento de style ,script e tag meta na view
-    final public function linkTag(string $link, array $attributes = []) {
-        if (substr($link, 0, 4) != 'http') $link = Router::getPublicDir() . $link;
-        $attr = array('href' => $link, 'type' => 'text/css', 'rel' => 'stylesheet');
-        if ($attributes) $attr = array_merge($attr, $attributes);
-        $str = '';
-        foreach ($attr as $key => $value) $str .= "{$key}=\"{$value}\" ";
-        return "<link {$str} />";
-    }
-    final public function metaTag(array $attributes = []) {
-        $str = '';
-        foreach ($attributes as $key => $value) $str .= "{$key}=\"{$value}\" ";
-        return "<meta {$str} />";
-    }
-    final public function scriptTag(string $scr, array $attributes = []) {
-        if (substr($scr, 0, 4) != 'http') $scr = Router::getPublicDir() . $scr;
-        $attr = array('src' => $scr, 'type' => 'text/javascript');
-        if ($attributes) $attr = array_merge($attr, $attributes);
-        $str = '';
-        foreach ($attr as $key => $value) $str .= "{$key}=\"{$value}\" ";
-        return "<script {$str} ></script>";
-    }
-    final public function styleTag(string $scr, array $attributes = []) {
-        if (substr($scr, 0, 4) != 'http') $scr = Router::getPublicDir() . $scr;
-        $attr = array('src' => $scr, 'type' => 'text/css');
-        if ($attributes) $attr = array_merge($attr, $attributes);
-        $str = '';
-        foreach ($attr as $key => $value) $str .= "{$key}=\"{$value}\" ";
-        return "<style {$str} ></style>";
-    }
-
     //--Adiciona Tags para renderizar no layout
-    final public function addLinkTag($link, array $attr = []) {
-        $this->_link[]   = $this->linkTag($link, $attr);
+    final public function addLinkTag(string $link, array $attr = []) {
+        $attr['src'] = Router::createLink($link);
+        $this->_link[] = new ScriptTag(type: 'link', attributes: $attr);
     }
     final public function addScriptTag($link, array $attr = []) {
-        $this->_script[] = $this->scriptTag($link, $attr);
+        $attr['src'] = Router::createLink($link);
+        $this->_script[] = new ScriptTag(type: 'script', attributes: $attr);
     }
     final public function addStyleTag($link, array $attr = []) {
-        $this->_style[] = $this->styleTag($link, $attr);
+        $attr['src'] = Router::createLink($link);
+        $this->_style[] = new ScriptTag(type: 'style', attributes: $attr);
     }
     final public function addMetaTag(array $attr = []) {
-        $this->_meta[]   = $this->metaTag($attr);
+        $this->_meta[] = new ScriptTag(type: 'meta', attributes: $attr);
     }
 
     final public function exportTags() {
@@ -167,17 +140,22 @@ class View {
 
 
     //--Renderiza Tags adicionadas --//
-    final public function renderLinkTag(): string {
-        return ($this->_link) ? implode(PHP_EOL, $this->_link) : '';
+    private function renderScript(array $scripts, ?Closure $render = null, ?Closure $filter = null) {
+        if ($filter) $scripts = array_filter($scripts, $filter);
+        $redered = $render ? array_map($render, $scripts) : array_map(fn($s) => $s->render(), $scripts);
+        return implode(PHP_EOL, $redered);
     }
-    final public function renderMetaTag(): string {
-        return ($this->_meta) ? implode(PHP_EOL, $this->_meta) : '';
+    final public function renderScriptTag(?Closure $render = null, ?Closure $filter = null): string {
+        return $this->renderScript($this->_script, $render, $filter);
     }
-    final public function renderScriptTag(): string {
-        return ($this->_script) ? implode(PHP_EOL, $this->_script) : '';
+    final public function renderLinkTag(?Closure $render = null, ?Closure $filter = null): string {
+        return $this->renderScript($this->_link, $render, $filter);
     }
-    final public function renderStyleTag(): string {
-        return ($this->_style) ? implode(PHP_EOL, $this->_style) : '';
+    final public function renderMetaTag(?Closure $render = null, ?Closure $filter = null): string {
+        return $this->renderScript($this->_meta, $render, $filter);
+    }
+    final public function renderStyleTag(?Closure $render = null, ?Closure $filter = null): string {
+        return $this->renderScript($this->_style, $render, $filter);
     }
 
     //--Renderiza uma view diretamente na view atual --//
@@ -243,22 +221,22 @@ class View {
                 if ($this->_layout !== false or $tagsExport) {
                     //--Removendo link da View
                     $this->_renderized = preg_replace_callback('#<link(.*?)>#is', function ($matches) {
-                        $this->_link[] = $matches[0];
+                        $this->_link[] = new ScriptTag(type: 'link', attributes: $matches[1]);
                         return '';
                     }, $this->_renderized);
                     //--Removendo metatag da View
                     $this->_renderized = preg_replace_callback('#<meta(.*?)>#is', function ($matches) {
-                        $this->_meta[] = $matches[0];
+                        $this->_meta[] = new ScriptTag(type: 'meta', attributes: $matches[1]);
                         return '';
                     }, $this->_renderized);
                     //--Removendo tag script da View
                     $this->_renderized = preg_replace_callback('#<script(.*?)>(.*?)</script>#is', function ($matches) {
-                        $this->_script[] = $matches[0];
+                        $this->_script[] = new ScriptTag(type: 'script', content: $matches[2], attributes: $matches[1]);
                         return '';
                     }, $this->_renderized);
                     //--Removendo style da View
                     $this->_renderized = preg_replace_callback('#<style(.*?)>(.*?)</style>#is', function ($matches) {
-                        $this->_style[] = $matches[0];
+                        $this->_style[] = new ScriptTag(type: 'style', content: $matches[2], attributes: $matches[1]);
                         return '';
                     }, $this->_renderized);
                 }

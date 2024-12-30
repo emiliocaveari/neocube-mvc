@@ -3,8 +3,9 @@
 namespace NeoCube;
 
 use NeoCube\View\ViewRenderInterface;
-use NeoCube\View\RenderHtml;
+use NeoCube\View\RenderView;
 use NeoCube\View;
+use NeoCube\View\RenderJson;
 
 abstract class Controller {
 
@@ -43,19 +44,31 @@ abstract class Controller {
     }
 
 
-    final public function execute(): ViewRenderInterface {
+    final public function execute(): ?ViewRenderInterface {
         if (!$this->view) $this->view = new View();
         $this->view->setController($this->_controller, $this->_action, $this->getViewPath());
 
         $action = $this->_action . '_';
         $this->_init();
-        return $this->render($this->$action(...$this->_values));
+        $actionData = $this->$action(...$this->_values);
+        return $actionData!==false ? $this->render($actionData) : null;
     }
 
 
     public function render(mixed $actionData): ViewRenderInterface {
         if ($actionData instanceof ViewRenderInterface)
             return $actionData;
-        return new RenderHtml($this->view);
+        if (is_array($actionData)) {
+            $status = $actionData['status'] ?? 200;
+            $data = $actionData['data'] ?? $actionData;
+            return new RenderJson($data, $status);
+        }
+        if (is_object($actionData)) {
+            $status = $actionData?->status ?? 200;
+            $data = $actionData?->data ?? $actionData;
+            return new RenderJson($data, $status);
+        }
+        //--Retorna a rederização da view por padrão
+        return new RenderView($this->view);
     }
 }

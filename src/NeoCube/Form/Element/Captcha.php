@@ -22,7 +22,7 @@ class Captcha extends ElementAbstract {
         $this->placeholder($val1 .' + '.$val2 .' = ?');
     }
 
-    public function input(){
+    public function input() : string{
         //--Registra token na sessao
         Session::set('captcha_'.$this->name(true) , $this->token );
         //--Input
@@ -36,7 +36,7 @@ class Captcha extends ElementAbstract {
      *
      * @return array
      */
-    public function getParamsValidate(){
+    public function getParamsValidate() : array{
         $name = $this->name(true);
         $params = array(
             'numeric'  => true,

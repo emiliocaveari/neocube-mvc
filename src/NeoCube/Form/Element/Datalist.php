@@ -62,15 +62,7 @@ class Datalist extends ElementAbstract {
         }
     }
 
-
-    /**
-     * Seta options
-     *
-     * @param array $options array("value"=>"option") or
-     * @param array $options array("value"=>array(attr=>value) )
-     * @return this
-     */
-    public function options($options=array()){
+    public function options(null|array $options=array()):array|static{
         if (is_null($options) or !count($options)){
             return $this->options;
         } else {
@@ -80,7 +72,7 @@ class Datalist extends ElementAbstract {
     }
 
 
-    public function input(){
+    public function input() : string{
         if ( !$this->id() )         $this->id( ($this->name() . rand(111111,999999)) );
         if ( !$this->idDatalist() ) $this->idDatalist($this->id().'-datalist');
         $this->attr('list',true); //--Remove list caso tenha sido setado

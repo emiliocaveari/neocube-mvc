@@ -7,11 +7,10 @@ use NeoCube\View;
 
 class RenderHtml implements ViewRenderInterface {
 
-    public function __construct(private View $view) {
+    public function __construct(private string $html) {
     }
 
     public function render(): void {
-        $html = $this->view->renderAll();
-        Response::html($html);
+        Response::html($this->html);
     }
 }

@@ -6,7 +6,7 @@ use NeoCube\Error\ErrorAbstract;
 use NeoCube\Error\ErrorType;
 use NeoCube\Error;
 
-class Application{
+final class Application{
 
     private function __construct(){}
 

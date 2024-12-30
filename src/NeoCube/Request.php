@@ -10,10 +10,10 @@ class Request {
     static protected $_method  = null;
     static protected $_headers = null;
 
-    static private function get_input_values() : ?array {
+    static private function get_input_values(): ?array {
         $values = file_get_contents("php://input") ?: array();
-        if ($values){
-            if ( isset($_SERVER['CONTENT_TYPE']) and $_SERVER['CONTENT_TYPE']=='application/json' ){
+        if ($values) {
+            if (isset($_SERVER['CONTENT_TYPE']) and $_SERVER['CONTENT_TYPE'] == 'application/json') {
                 $values = json_decode($values, true);
             }
         }
@@ -21,7 +21,7 @@ class Request {
     }
 
 
-    static protected function readRequestData() :void {
+    static protected function readRequestData(): void {
         static::$_method  = strtoupper($_SERVER['REQUEST_METHOD']);
         switch (static::$_method) {
             case 'POST':
@@ -37,87 +37,110 @@ class Request {
                 break;
         }
 
-        if (isset($_FILES)){
+        if (isset($_FILES)) {
             foreach ($_FILES as $key => $file) {
                 static::$_data[$key] = $file;
             }
         }
 
-        if (isset(static::$_data['_method'])){
+        if (isset(static::$_data['_method'])) {
             static::$_method = trim(static::$_data['_method']);
             unset(static::$_data['_method']);
         }
     }
 
+
+
     //--PUBLIC FUNCTIONS------------------------------------------------------//
     //------------------------------------------------------------------------//
 
 
-    static public function request() :bool {
-        if (is_null(static::$_data)) self::readRequestData();
+    static public function request(): bool {
+        if (is_null(static::$_data)) static::readRequestData();
         return (static::$_data) ? true : false;
     }
 
-    static public function getData(bool|string|array $data=false, mixed $defaultEmpty=null) : mixed{
-        if (is_null(static::$_data) or $data===true) self::readRequestData();
-        if ($data!==true and $data!==false) {
-            if ( is_array($data) ){
+    static public function getData(bool|string|array $data = false, mixed $defaultEmpty = null): mixed {
+        if (is_null(static::$_data) or $data === true) static::readRequestData();
+        if ($data !== true and $data !== false) {
+            if (is_array($data)) {
                 $arrData = [];
-                foreach ($data as $k){
+                foreach ($data as $k) {
                     $arrData[$k] = isset(static::$_data[$k]) ? static::$_data[$k] : $defaultEmpty;
                 }
                 return $arrData;
-            }
-            else return isset(static::$_data[$data]) ? static::$_data[$data] : $defaultEmpty;
-        }
-        else return static::$_data;
+            } else return isset(static::$_data[$data]) ? static::$_data[$data] : $defaultEmpty;
+        } else return static::$_data;
     }
 
-    static public function getHeader(string $header='',bool $reload=false) :mixed {
-        if ( is_null(static::$_headers) or $reload) static::$_headers = getallheaders();
-        return empty($header) 
-            ? static::$_headers 
-            : ( isset(static::$_headers[$header]) ? static::$_headers[$header] : false );
+    static public function getHeader(string $header = '', bool $reload = false): mixed {
+        if (is_null(static::$_headers) or $reload) static::$_headers = getallheaders();
+        return empty($header)
+            ? static::$_headers
+            : (isset(static::$_headers[$header]) ? static::$_headers[$header] : false);
     }
 
-    static public function getMethod() : string {
-        if (is_null(static::$_data)) self::readRequestData();
+    static public function getMethod(): string {
+        if (is_null(static::$_data)) static::readRequestData();
         return static::$_method;
     }
-    static public function isMethod($method) : bool {
-        if (is_null(static::$_data)) self::readRequestData();
-        return ( static::$_method === strtoupper($method) );
+    static public function isMethod($method): bool {
+        if (is_null(static::$_data)) static::readRequestData();
+        return (static::$_method === strtoupper($method));
     }
 
-    //--Validaçao
-    static public function validateData(array $arguments,$data=null) : bool {
-        if (is_null($data)) $data = self::getData();
-        return Validate::data($data,$arguments);
+    static public function validateData(array $arguments, $data = null): bool {
+        if (is_null($data)) $data = static::getData();
+        return Validate::data($data, $arguments);
     }
 
-    static public function validateErrors() : array{
+    static public function validateErrors(): array {
         return Validate::getDataErrors();
     }
 
 
     //--Retorna array GET em formato de url
-    static public function getToUrl(array $arr=[] ) : string {
+    static public function getToUrl(array $arr = []): string {
         //--Mescalndo novos valores ao get
-        if ( static::isMethod('get') ){
+        if (static::isMethod('get')) {
             $data = static::getData();
-            $get  = array_merge($data,$arr);
+            $get  = array_merge($data, $arr);
         } else {
             $get = $arr;
         }
-        return '?'.http_build_query($get); 
+        return '?' . http_build_query($get);
     }
 
     //--Verifia se a requisição foi realizada via XMLHttpRequest
-    static public function isAjax() : bool  {
-        return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) and $_SERVER['HTTP_X_REQUESTED_WITH']=='XMLHttpRequest')
+    static public function isAjax(): bool {
+        return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) and $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
             ? true
             : false;
     }
 
 
+    static public function httpController(string $url, ?array $data = null, ?string $method = null, ?array $headers = null) {
+        $restore = [];
+        if ($data) {
+            $restore['data'] = static::$_data;
+            static::$_data = $data;
+        }
+        if ($method and in_array(strtolower($method), ['get', 'post', 'put', 'delete'])) {
+            $restore['method'] = static::$_method;
+            static::$_method = $method;
+        }
+        if ($headers) {
+            $restore['headers'] = static::$_headers;
+            static::$_headers = is_array(static::$_headers) ? array_merge(static::$_headers, $headers) : $headers;
+        }
+
+        Application::Router()->routing($url);
+        $content = Application::Router()->getOut();
+
+        if (isset($restore['data']))    static::$_data    = $restore['data'];
+        if (isset($restore['headers'])) static::$_headers = $restore['headers'];
+        if (isset($restore['method']))  static::$_method  = $restore['method'];
+
+        return $content;
+    }
 }

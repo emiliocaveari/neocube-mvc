@@ -2,6 +2,7 @@
 
 namespace NeoCube;
 
+use Closure;
 use NeoCube\Request;
 use NeoCube\Validate;
 use NeoCube\Form\ElementAbstract;
@@ -24,34 +25,7 @@ class Form {
     protected string $FormRender  = '';         //--Classe de renderização do formulários
     protected string $funcRender  = 'render';   //--Função padrão de renderização do formulários
 
-    protected array $mapElements = [
-        'button' => '\\NeoCube\\Form\\Element\\Button',
-        'captcha' => '\\NeoCube\\Form\\Element\\Captcha',
-        'checkbox' => '\\NeoCube\\Form\\Element\\Checkbox',
-        'color' => '\\NeoCube\\Form\\Element\\Color',
-        'datalist' => '\\NeoCube\\Form\\Element\\Datalist',
-        'date' => '\\NeoCube\\Form\\Element\\Date',
-        'datetime' => '\\NeoCube\\Form\\Element\\Datetime',
-        'datetimelocal' => '\\NeoCube\\Form\\Element\\Datetimelocal',
-        'email' => '\\NeoCube\\Form\\Element\\Email',
-        'file' => '\\NeoCube\\Form\\Element\\File',
-        'hidden' => '\\NeoCube\\Form\\Element\\Hidden',
-        'month' => '\\NeoCube\\Form\\Element\\Month',
-        'number' => '\\NeoCube\\Form\\Element\\Number',
-        'password' => '\\NeoCube\\Form\\Element\\Password',
-        'radio' => '\\NeoCube\\Form\\Element\\Radio',
-        'range' => '\\NeoCube\\Form\\Element\\Range',
-        'reset' => '\\NeoCube\\Form\\Element\\Reset',
-        'search' => '\\NeoCube\\Form\\Element\\Search',
-        'select' => '\\NeoCube\\Form\\Element\\Select',
-        'submit' => '\\NeoCube\\Form\\Element\\Submit',
-        'tel' => '\\NeoCube\\Form\\Element\\Tel',
-        'text' => '\\NeoCube\\Form\\Element\\Text',
-        'textarea' => '\\NeoCube\\Form\\Element\\Textarea',
-        'time' => '\\NeoCube\\Form\\Element\\Time',
-        'url' => '\\NeoCube\\Form\\Element\\Url',
-        'week' => '\\NeoCube\\Form\\Element\\Week',
-    ];
+    protected array $mapElements = [];
 
 
     public function __construct(array $attr) {
@@ -66,13 +40,7 @@ class Form {
     }
 
 
-    /**
-     * Atribui valor a name
-     *
-     * @param String $name
-     * @return $this
-     */
-    final public function name(string|null $name = null): string|self {
+    final public function name(string|null $name = null): string|static {
         if (is_null($name)) {
             return $this->attr['name'];
         } else {
@@ -82,13 +50,7 @@ class Form {
         }
     }
 
-    /**
-     * Atribui valor a action
-     *
-     * @param String $action
-     * @return $this
-     */
-    final public function action(string|null $action = null): string|self {
+    final public function action(string|null $action = null): string|static {
         if (is_null($action)) {
             return $this->attr['action'];
         } else {
@@ -98,13 +60,7 @@ class Form {
         }
     }
 
-    /**
-     * Atribui valor GET/POST a method
-     *
-     * @param String $method
-     * @return $this
-     */
-    final public function method(string $method = ''): string|self {
+    final public function method(string $method = ''): string|static {
         if (empty($method)) {
             return isset($this->attr['method']) ? $this->attr['method'] : '';
         } else {
@@ -114,13 +70,7 @@ class Form {
         }
     }
 
-    /**
-     * Atribui valor a enctype. Padrao multipart/form-data
-     *
-     * @param String $enctype
-     * @return $this
-     */
-    final public function enctype(string|false $enctype = ''): string|self {
+    final public function enctype(string|false $enctype = ''): string|static {
         if (empty($enctype)) {
             return isset($this->attr['enctype']) ? $this->attr['enctype'] : '';
         } else {
@@ -131,7 +81,7 @@ class Form {
     }
 
 
-    final public function id(string|null $id = null): string|self {
+    final public function id(string|null $id = null): string|static {
         if ($id === null) {
             return $this->attr['id'] ?? '';
         } else {
@@ -140,14 +90,7 @@ class Form {
         }
     }
 
-
-    /**
-     * Atributos extas
-     *
-     * @param array $val Ex:array('style'=>'border:0')
-     * @return null
-     */
-    final public function attr(array |null $val = null): string|self {
+    final public function attr(array |null $val = null): string|static {
         if (is_null($val)) {
             return $this->attr;
         } else if (is_array($val)) {
@@ -166,13 +109,7 @@ class Form {
         }
     }
 
-    /**
-     * Atributos inseridos ao elemento ao ser validado como false
-     *
-     * @param array $val Ex:array('style'=>'border:0')
-     * @return $this
-     */
-    final public function attrError(array $val = []): array|self {
+    final public function attrError(array $val = []): array|static {
         if (count($val)) {
             $this->attrError = $val;
             return $this;
@@ -182,13 +119,7 @@ class Form {
     }
 
 
-    /**
-     * Seta função para renderizar elementos do formulário
-     *
-     * @param string $formRender , padrão Render::class;
-     * @return $this
-     */
-    final public function formRender(string $formRender = ''): self|callable {
+    final public function formRender(string $formRender = ''): static|callable {
         if (empty($formRender)) {
             return $this->FormRender;
         } else {
@@ -197,13 +128,7 @@ class Form {
         return $this;
     }
 
-    /**
-     * Seta função para renderizar elementos do formulário
-     *
-     * @param string $funcRender , padrão 'render';
-     * @return $this
-     */
-    final public function funcRender(string $funcRender = ''): self | callable {
+    final public function funcRender(string $funcRender = ''): static | callable {
         if (empty($funcRender)) {
             return $this->funcRender;
         } else {
@@ -211,7 +136,6 @@ class Form {
         }
         return $this;
     }
-
 
     private function pushElement(ElementAbstract $element, string $identify = '', string $pos = ''): void {
         if (!empty($identify)) {
@@ -236,14 +160,6 @@ class Form {
         }
     }
 
-    /**
-     * Adiciona um elemento
-     *
-     * @param string $type text,button,select..
-     * @param NeoCube_Element $type
-     * @param string $identify identifica no array de elementos o novo elemento adicionado
-     * @return NeoCube_Element
-     */
     public function addElement(ElementAbstract|string $type, string $identify = '', null|string $pos = ''): ElementAbstract | false {
         if ($type instanceof ElementAbstract) {
             $element = $type;
@@ -259,26 +175,12 @@ class Form {
         return $element;
     }
 
-
-    /**
-     * Adiciona array contendo objetos de NeoCube_Element
-     *
-     * @param array $elements Ex: array('identify'=>$element);
-     * @return Null
-     */
     public function addElements(array $elements): void {
         foreach ($elements as $identify => $element)
             if ($element instanceof ElementAbstract)
                 $this->addElement($element, $identify);
     }
 
-    /**
-     * Retorna elemento NeoCube_Element
-     *
-     * @param string $identify
-     * @param intefer $pos=0 Caso elementos com mesmo nome (Ex:radio)
-     * @return NeoCube_Element
-     */
     final public function getElement(string $identify, string|null $pos = '', bool $remove = false): ElementAbstract | array | null {
         $elem = null;
         if (isset($this->elements[$identify])) {
@@ -294,13 +196,6 @@ class Form {
         return $elem;
     }
 
-    /**
-     * Remove elemento NeoCube_Element
-     *
-     * @param string $identify
-     * @param intefer $pos=0 Caso elementos com mesmo nome (Ex:radio)
-     * @return NeoCube_Element
-     */
     final public function removeElement(string $identify, string|null $pos = ''): bool {
         if (isset($this->elements[$identify])) {
             if (is_array($this->elements[$identify]) and !empty($pos)) {
@@ -313,12 +208,6 @@ class Form {
         return false;
     }
 
-    /**
-     * Verifica se existe elemento com a identificação passada
-     *
-     * @param string $identify
-     * @return boolean
-     */
     final public function issetElement(string $identify, $pos = ''): bool {
         if (isset($this->elements[$identify])) {
             if (empty($pos)) return true;
@@ -327,11 +216,6 @@ class Form {
         return false;
     }
 
-    /**
-     * Retorna Element->name
-     *
-     * @return Array
-     */
     final public function getElementsName(): array {
         $arr = array();
         foreach ($this->elements as $elem) {
@@ -352,13 +236,6 @@ class Form {
         return $arr;
     }
 
-
-
-    /**
-     * Retorna parametros de validaçao dos elementos do form
-     *
-     * @return Array
-     */
     final public function getElementsParamsValidate(): array {
         $arr = array();
         foreach ($this->elements as $elem) {
@@ -377,15 +254,6 @@ class Form {
         return $arr;
     }
 
-
-    /**
-     * Escreve html do elemento
-     *
-     * @param string $identify Pode ser passado um elemento ou varios elmentos separados por "," Ex: 'element' ou 'element1,element2'
-     * @param string $fieldset Agrupa elementos em um fieldset com legenda
-     * @param array  $attr adiciona atributos ao fieldset Ex (array('id'=>'num_id'))
-     * @return html
-     */
     public function writeElement(array|string $identify, string $pos = ''): string {
 
         //--Verifica se existe constante definida para renderizar o formulário
@@ -449,11 +317,31 @@ class Form {
     }
 
 
-    /**
-     * Abre tag <form>
-     *
-     * @return html
-     */
+    public function formatElements(true|array|string $identify, Closure $format): static {
+        if ($identify === true)
+            $identify = array_keys($this->elements);
+        else if (is_string($identify) and strpos($identify, ',') !== false)
+            $identify = explode(',', $identify);
+
+        if (is_array($identify)) {
+            foreach ($identify as $id) {
+                if (isset($this->elements[$id])) {
+                    if (is_array($this->elements[$id])) {
+                        foreach ($this->elements[$id] as $elem)
+                            $format($elem,$id);
+                    } else $format($this->elements[$id],$id);
+                }
+            }
+        } else if (isset($this->elements[$identify])) {
+            if (is_array($this->elements[$identify])) {
+                foreach ($this->elements[$identify] as $elem)
+                    $format($elem,$identify);
+            } else $format($this->elements[$identify],$identify);
+        }
+        return $this;
+    }
+
+
     public function open(): string {
         if (!$this->open) {
             $return = '<form ';
@@ -470,9 +358,6 @@ class Form {
         }
     }
 
-    /**
-     * Retorna elemento
-     */
     public function element(string $identify, string $pos = '0'): ?ElementAbstract {
 
         if (isset($this->elements[$identify])) {
@@ -489,11 +374,6 @@ class Form {
         }
     }
 
-    /**
-     * Fecha tag </form>
-     *
-     * @return html
-     */
     public function close(): string {
         if (!$this->close) {
             $this->close = true;
@@ -504,11 +384,6 @@ class Form {
     }
 
 
-    /**
-     * Retorna formulário
-     *
-     * @return html
-     */
     public function writeForm($funcRender = null): string {
         //--seta função de renderização do form
         if ($funcRender !== null and $funcRender !== false)
@@ -527,12 +402,6 @@ class Form {
     }
 
 
-    /**
-     * Verifica que o formulario foi enviado
-     * @param bool $reload Le novamente os campos recebidos
-     *
-     * @return bool
-     */
     public function request(bool $reload = false): bool {
         if (!$this->request or $reload) {
             $names   = $this->getElementsName();
@@ -547,11 +416,6 @@ class Form {
     }
 
 
-    /**
-     * Retorna dados enviados pelo formulario
-     *
-     * @return array
-     */
     public function requestValues(): ?array {
         if ($this->request()) {
             return $this->request;
@@ -561,11 +425,6 @@ class Form {
     }
 
 
-    /**
-     * Valida elementos do formulario
-     *
-     * @return bool
-     */
     public function validate(array $arguments = []): bool {
         if (!$arguments) $arguments = $this->getElementsParamsValidate();
         if (Validate::data($this->requestValues(), $arguments)) {
@@ -578,14 +437,7 @@ class Form {
     }
 
 
-    /**
-     * Restaura/Limpa values dos elementos
-     *
-     * @param boolean $init restaura valores iniciais DEFAULT true
-     * @param array $only_identify restaura somente valores indentificados
-     * @return this
-     */
-    public function clearValues(bool $init = true, array $only_identify = []): self {
+    public function clearValues(bool $init = true, array $only_identify = []): static {
 
         //--Verifica se foram registrados valores
         if (is_null($this->elements_values_init)) return $this;
@@ -616,13 +468,7 @@ class Form {
     }
 
 
-    /**
-     * Adiciona values aos campos
-     *
-     * @param array $values
-     * @return html
-     */
-    public function registerValues(array $values = []): self {
+    public function registerValues(array $values = []): static {
         //--Validando valores
         if (count($values)) {
             $values = $this->prepareValuesForRegister($values);
@@ -680,13 +526,7 @@ class Form {
 
 
 
-    /**
-     * Adiciona values aos campos
-     *
-     * @param array $values
-     * @return html
-     */
-    public function registerValidateErrors(array $errors): self {
+    public function registerValidateErrors(array $errors): static {
         //--Registrando erros nos elementos
         foreach ($this->elements as $identify => $element) {
             if (is_array($element)) {

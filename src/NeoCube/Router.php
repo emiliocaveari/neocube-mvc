@@ -18,7 +18,7 @@ class Router {
     static protected array $url = [];
     static protected string $publicDir = '/';
 
-    protected ViewRenderInterface $outView;
+    protected ?ViewRenderInterface $outView;
     protected Controller $Controller;
 
     protected array $routes = array();
@@ -55,8 +55,12 @@ class Router {
         if ($str_router === null)
             $url .= self::$url[self::MODE_URL_BASE];
         else if (!empty($str_router)) {
-            $str_router = implode('/', array_filter(explode('/', $str_router)));
-            $url .= $str_router;
+            if (substr($str_router, 0, 4) == 'http') {
+                $url = $str_router;
+            } else {
+                $str_router = implode('/', array_filter(explode('/', $str_router)));
+                $url .= $str_router;
+            }
         }
 
         if (substr($url, -1, 1) == '/') $url = substr($url, 0, -1);
@@ -139,20 +143,31 @@ class Router {
     //--FINAL PUBLIC FUNCTIONS--//
     //--------------------------//
     final public function writeOut(): void {
-        $this->outView->render();
+        if ($this->outView) $this->outView->render();
     }
 
-    final public function routing(): void {
+    final public function getOut(): mixed {
+        if ($this->outView){
+            ob_start();
+            $this->outView->render();
+            $content = ob_get_contents();
+            ob_end_clean();
+            return $content;
+        }
+        return null;
+    }
+
+    final public function routing(?string $forceUrl = null): void {
         //--Realiza a leitur da URL
-        if (empty(self::$url)) self::urlGenerate();
+        if (empty(self::$url) or $forceUrl) self::urlGenerate($forceUrl);
         //--Retorna Controller referente a URL
         $this->Controller =  $this->selectController();
         //--Renderiza view
         $this->outView = $this->Controller->execute();
     }
 
-    final static protected function urlGenerate() {
-        $urlParse = parse_url($_SERVER['REQUEST_URI']);
+    final static protected function urlGenerate(?string $forceUrl = null): void {
+        $urlParse = $forceUrl ? parse_url($forceUrl) : parse_url($_SERVER['REQUEST_URI']);
 
         $url = isset($urlParse['path']) ? $urlParse['path'] : '/';
         if (substr($url, -1, 1) != '/') $url .= '/';

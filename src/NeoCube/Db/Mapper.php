@@ -5,9 +5,10 @@ namespace NeoCube\Db;
 use NeoCube\Db\Query\BuilderInferface;
 use NeoCube\Db\Query\MysqlBuilder;
 use NeoCube\Db\Query\Query;
+use NeoCube\View;
 use PDOStatement;
 use PDO;
-use NeoCube\View;
+use PDOException;
 
 class Mapper {
 
@@ -26,14 +27,14 @@ class Mapper {
     private $errorInfo = null;
 
     private $paginate   = null;
-    private $bindValues = array();
-    private $execute    = true;
-    private $fetchStm   = null;
+    private array $bindValues = [];
+    private bool $execute    = true;
+    private bool|PDOStatement $fetchStm = false;
     private $fetchMode  = PDO::FETCH_ASSOC;
     private $fetchClass = 'stdClass';
 
-    private $sentence;
-    private $rowCount;
+    private string $sentence = '';
+    private int $rowCount    = 0;
 
     public function __construct(string $table = '', string $pk = '') {
         if ($table and !$this->_table) {
@@ -49,16 +50,15 @@ class Mapper {
         return $this->error;
     }
 
-    public function saveInfo(): string {
-        return $this->saveInfo;
-    }
-
     public function getErrorInfo(): array|null {
         return $this->errorInfo;
     }
 
     public function getErrorCode() {
         return $this->errorCode;
+    }
+
+    protected function onErrorLog(string $sentence, array $input_parameters, PDOException $exception): void {
     }
 
     public function getLastInsertId() {
@@ -91,8 +91,8 @@ class Mapper {
         return $this->Db->commit();
     }
 
-    public function rollback() {
-        return $this->Db->rollback();
+    public function rollBack() {
+        return $this->Db->rollBack();
     }
 
     public function clear(string|array $type = ''): static {
@@ -109,8 +109,8 @@ class Mapper {
         if (in_array('bind', $clear) or in_array('bindvalues', $clear))
             $this->bindValues = [];
 
-        $this->sentence = null;
-        $this->fetchStm = null;
+        $this->sentence = '';
+        $this->fetchStm = false;
         return $this;
     }
 
@@ -153,36 +153,27 @@ class Mapper {
         return $this;
     }
 
-    protected function executeSentence(array $input_parameters = null): bool|PDOStatement {
+    protected function executeSentence(array $input_parameters = []): bool|PDOStatement {
         if (!$this->execute) {
             $this->execute = true;
             return false;
         }
         if (!empty($this->sentence)) {
             try {
-                if ($query = $this->Db->prepare($this->sentence)) {
+                $query = $this->Db->prepare($this->sentence);
 
-                    if ($this->bindValues) {
-                        if ($input_parameters === null) foreach ($this->bindValues as $k => $v) $query->bindValue($k, $v);
-                        else foreach ($this->bindValues as $k => $v) $input_parameters[$k] = $v;
-                    }
+                $input_parameters = array_merge($input_parameters,$this->bindValues);
+                foreach ($input_parameters as $k => $v)
+                    $query->bindValue($k, $v);
 
-                    if ($query->execute($input_parameters)) {
-                        $this->rowCount = $query->rowCount();
-                    } else {
-                        $this->errorCode = $query->errorCode();
-                        $this->errorInfo = $query->errorInfo();
-                        return false;
-                    }
-                } else {
-                    $this->errorCode = $this->Db->errorCode();
-                    $this->errorInfo = $this->Db->errorInfo();
-                    return false;
-                }
+                $query->execute();
+                $this->rowCount = $query->rowCount();
+
                 return $query;
-            } catch (\PDOException $e) {
+            } catch (PDOException $e) {
                 $this->errorCode = $e->getCode();
                 $this->errorInfo = $e->errorInfo;
+                $this->onErrorLog($this->sentence, $input_parameters, $e);
                 return false;
             }
         } else {
@@ -196,17 +187,6 @@ class Mapper {
 
     public function setCols(string|array $cols): static {
         $this->Query->setCols($cols);
-        return $this;
-    }
-
-    public function setCase(string $col, array $arrKeyVal, string $col_out, string $default = ''): static {
-        $case = "CASE {$col} ";
-        foreach ($arrKeyVal as $k => $v)
-            $case .= " WHEN '{$k}' THEN '{$v}' ";
-        if ($default) $case .= "ELSE '{$default}' ";
-        $case .= "END AS {$col_out}";
-
-        $this->Query->setCols($case);
         return $this;
     }
 
@@ -288,6 +268,10 @@ class Mapper {
     }
 
 
+    public function saveInfo(): string {
+        return $this->saveInfo;
+    }
+
     public function save(array $data): int|false {
         if (isset($data[$this->_pk])) {
             if (!empty($data[$this->_pk])) $id = $data[$this->_pk];
@@ -336,12 +320,12 @@ class Mapper {
 
 
     public function fetch(): bool|array|object {
-        if (empty($this->sentence) or is_null($this->fetchStm)) {
+        if (empty($this->sentence) or $this->fetchStm === false) {
             $this->sentence  = $this->Builder->select($this->Query);
             $this->fetchStm = $this->executeSentence();
             $this->selectFetchMode($this->fetchStm);
         }
-        if ($this->fetchStm !== false)
+        if ($this->fetchStm instanceof PDOStatement)
             return $this->fetchStm->fetch();
         else
             return false;

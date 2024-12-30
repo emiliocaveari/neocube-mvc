@@ -79,41 +79,41 @@ class Response {
         }
     }
 
-    static public function json(mixed $objJson, int $code = 200, bool $clean = false): void {
+    static public function json(mixed $objJson, int $code = 200, bool $clean = false) : false {
         if ($clean) ob_clean();
         header('Content-Type: application/json');
         http_response_code($code);
         header('status: ' . $code);
         echo json_encode($objJson);
-        exit(0);
+        return false;
     }
 
-    static public function text(string $text, int $code = 200, bool $clean = false): void {
+    static public function text(string $text, int $code = 200, bool $clean = false): false {
         if ($clean) ob_clean();
         header('Content-Type: text/plain');
         http_response_code($code);
         header("status: {$code}");
         echo $text;
-        exit(0);
+        return false;
     }
 
 
-    static public function html(string $text, bool $clean = false): void {
+    static public function html(string $text, bool $clean = false): false {
         if ($clean) ob_clean();
         header('Content-Type: text/html');
         http_response_code(200);
         header('status: 200');
         echo $text;
-        exit(0);
+        return false;
     }
 
-    static public function file($file, $contentType = null, int $code = 200, $clean = false): void {
+    static public function file($file, $contentType = null, int $code = 200, $clean = false): false {
         if (is_null($contentType)) $contentType = self::getContentType($file);
         if ($clean) ob_clean();
         header("Content-Type: {$contentType}");
         http_response_code($code);
         header("status: {$code}");
         readfile($file);
-        exit(0);
+        return false;
     }
 }

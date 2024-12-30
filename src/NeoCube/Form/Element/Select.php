@@ -10,14 +10,7 @@ class Select extends ElementAbstract {
     protected string $type = 'select';
 
 
-    /**
-     * Seta options
-     *
-     * @param array $options array("value"=>"option") or
-     * @param array $options array("value"=>array(attr=>value) )
-     * @return this
-     */
-    public function options($options=array()){
+    public function options(null|array $options=array()):array|static{
         if (is_null($options) or !count($options)){
             return $this->options;
         } else {
@@ -42,23 +35,16 @@ class Select extends ElementAbstract {
         return $values;
     }
 
-    /**
-     * Seta se o select será de multiplos valores
-     *
-     * @param array $options array("value"=>"option") or
-     * @param array $options array("value"=>array(attr=>value) )
-     * @return this
-     */
-    public function multiple(bool $bool=true) :self {
+    public function multiple(bool $bool=true) :static {
         $this->attr(array('multiple'=>$bool));
         return $this;
     }
 
-    public function size(mixed $val = null) :mixed {
+    public function size(null|string $val = null) :string|static {
         if (is_null($val)){
             return isset($this->attr['size']) ? $this->attr['size'] : '';
         } else {
-            if ($val !== false) $this->attr['size'] = $val;
+            if ($val !== false) $this->attr['size'] = trim("{$val}");
             else  unset($this->attr['size']);
             return $this;
         }

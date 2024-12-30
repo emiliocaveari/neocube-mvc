@@ -8,35 +8,27 @@ class Radio extends ElementAbstract {
 
     protected string $type = 'radio';
 
-    /**
-     * Seta atributo checked
-     *
-     * @param boolean $val
-     * @return this
-     */
-    public function checked($val=NULL){
-        if (is_null($val)){
-            return isset($this->attr['checked'])?TRUE:FALSE;
+    public function checked(null|bool $val = null): bool|static {
+        if (is_null($val)) {
+            return isset($this->attr['checked']) ? true : false;
         } else {
-            if ((bool)$val) $this->attr['checked'] = TRUE;
+            if ($val) $this->attr['checked'] = true;
             else  unset($this->attr['checked']);
             return $this;
         }
     }
 
-    public function value($val=NULL) : mixed {
-        if (is_null($val)){
-            return isset($this->attr['value'])?$this->attr['value']:NULL;
+    public function value(string|bool|null $val = null): string | static {
+        if (is_null($val)) {
+            return isset($this->attr['value']) ? $this->attr['value'] : null;
         } else {
-            if (!isset($this->attr['value'])){
+            if (!isset($this->attr['value'])) {
                 return parent::value($val);
             } else {
-                if($this->attr['value'] == $val) $this->attr['checked'] = TRUE;
+                if ($this->attr['value'] == $val) $this->attr['checked'] = true;
                 else unset($this->attr['checked']);
                 return $this;
             }
         }
     }
-
-
 }

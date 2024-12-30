@@ -12,7 +12,7 @@ class Button extends ElementAbstract {
         $this->label($identify);
     }
 
-    public function input(){
+    public function input() : string{
         return '<button type="'.$this->type().'" '.$this->attr(). '>'.$this->label().'</button>';
     }
 

@@ -9,13 +9,7 @@ class Textarea extends ElementAbstract {
     protected string $type = 'textarea';
 
 
-    /**
-     * Seta atributo rows="$val"
-     *
-     * @param string $val
-     * @return this
-     */
-    public function rows(mixed $val=null) :mixed {
+    public function rows(?string $val=null) :string|static {
         if (is_null($val)){
             return isset($this->attr['rows'])?$this->attr['rows']:'';
         } else {
@@ -29,7 +23,7 @@ class Textarea extends ElementAbstract {
     public function input() :string {
     	$value = $this->value();
     	$this->value(false);
-        //--Input
+
         $input = '<textarea '.$this->attr().'>'.$value.'</textarea>';
     	$this->value($value);
 
