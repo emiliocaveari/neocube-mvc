@@ -37,20 +37,28 @@ class Entity {
      * @param $name
      * @return string|null
      */
-    public function __get($name) {
+    public function __get($name): mixed {
 
         $camelName = Strings::toCamelCase($name, '_');
         if (method_exists($this, $camelName)) return $this->$camelName();
         if (method_exists($this, $name))      return $this->$name();
 
-        //--findo to getName
         $getName = Strings::toCamelCase("get_$name", '_');
         if (method_exists($this, $getName)) return $this->$getName($name);
 
-        //--findName TO find_name
         $name_under = Strings::reverseCamelCase($name, '_');
-        return isset($this->data[$name])
-            ? $this->data[$name]
-            : ($this->data[$name_under] ?? null);
+        return $this->data[$name]
+            ?? $this->data[$name_under]
+            ?? $this->data[$camelName]
+            ?? null;
+    }
+
+    public function __call($name, $arguments): mixed {
+        $camelName = Strings::toCamelCase($name, '_');
+        $name_under = Strings::reverseCamelCase($name, '_');
+        return $this->data[$name]
+            ?? $this->data[$name_under]
+            ?? $this->data[$camelName]
+            ?? null;
     }
 }
