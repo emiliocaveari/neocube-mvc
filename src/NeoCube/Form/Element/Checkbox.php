@@ -18,7 +18,7 @@ class Checkbox extends ElementAbstract {
         }
     }
 
-    public function value(string|bool|null $val = null): string|static {
+    public function value(array|string|bool|null $val = null): string | array | static {
         if (is_null($val)) {
             return isset($this->attr['value']) ? $this->attr['value'] : '';
         } else {

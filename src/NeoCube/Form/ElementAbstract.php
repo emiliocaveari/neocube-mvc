@@ -98,12 +98,15 @@ abstract class ElementAbstract {
         }
     }
 
-    public function value(string|bool|null $val = null): string | static {
+    public function value(array|string|bool|null $val = null): string | array | static {
         if (is_null($val)) {
             return isset($this->attr['value']) ? $this->attr['value'] : '';
         } else {
-            if ($val !== false) $this->attr['value'] = trim("{$val}");
-            else  unset($this->attr['value']);
+            if ($val === false) unset($this->attr['value']);
+            else {
+                if (is_array($val)) $this->attr['value'] = $val;
+                else $this->attr['value'] = trim("{$val}");
+            }
             return $this;
         }
     }
