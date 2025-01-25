@@ -108,7 +108,7 @@ class View {
 
     //--Adiciona Tags para renderizar no layout
     final public function addLinkTag(string $link, array $attr = []) {
-        $attr['src'] = Router::createLink($link);
+        $attr['href'] = Router::createLink($link);
         $this->_link[] = new ScriptTag(type: 'link', attributes: $attr);
     }
     final public function addScriptTag($link, array $attr = []) {
