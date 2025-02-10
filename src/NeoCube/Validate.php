@@ -59,7 +59,7 @@ class Validate {
             }
         } else {
 
-            $strlen =  empty($value) ? 0 : mb_strlen($value);
+            $strlen =  mb_strlen("{$value}");
             $required = isset($argument['required']) ? $argument['required'] : (bool) $strlen;
 
             if ($required and $strlen <= 0)
