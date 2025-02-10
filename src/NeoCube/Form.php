@@ -403,7 +403,10 @@ class Form {
 
 
     public function request(bool $reload = false): bool {
-        if (!$this->request or $reload) {
+        if (
+            Request::isMethod($this->method()) and
+            (!$this->request or $reload) 
+        ) {
             $names   = $this->getElementsName();
             $request = Request::getData($reload);
             if ($request and is_array($request)) {
