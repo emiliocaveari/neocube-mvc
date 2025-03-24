@@ -13,10 +13,15 @@ class MysqlBuilder implements BuilderInferface {
         $sentence  = 'SELECT ';
         $sentence .= (count($queryParams->cols)) ? implode(',', $queryParams->cols) : '*';
         $sentence .= ' FROM ' . $queryParams->table;
+        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+
 
         if (count($queryParams->join))
-            foreach ($queryParams->join as $join)
-                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $join['table'] . ' ON ' . implode(' AND ', $join['on']);
+            foreach ($queryParams->join as $join) {
+                $table = $join['table'];
+                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
+            }
 
         if (count($queryParams->where))
             $sentence .= ' WHERE ' . implode(' AND ', $queryParams->where);
@@ -142,9 +147,15 @@ class MysqlBuilder implements BuilderInferface {
         }
 
         $sentence = 'UPDATE ' . $queryParams->table;
-        if (count($queryParams->join))
-            foreach ($queryParams->join as $join)
-                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $join['table'] . ' ON ' . implode(' AND ', $join['on']);
+        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+
+        if (count($queryParams->join)) {
+            foreach ($queryParams->join as $join) {
+                $table = $join['table'];
+                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
+            }
+        }
         $sentence .= ' SET ' . implode(', ', $bindKeyValue);
         if (count($queryParams->where)) $sentence .= ' WHERE ' . implode(' AND ', $queryParams->where);
 
@@ -155,9 +166,14 @@ class MysqlBuilder implements BuilderInferface {
     public function delete(Query $query): string {
         $queryParams = $query->getParams();
         $sentence = "DELETE FROM " . $queryParams->table;
-        if (count($queryParams->join))
-            foreach ($queryParams->join as $join)
-                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $join['table'] . ' ON ' . implode(' AND ', $join['on']);
+        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+        if (count($queryParams->join)) {
+            foreach ($queryParams->join as $join) {
+                $table = $join['table'];
+                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
+            }
+        }
         if (count($queryParams->where)) $sentence .= ' WHERE ' . implode(' AND ', $queryParams->where);
         return $sentence;
     }
@@ -166,9 +182,12 @@ class MysqlBuilder implements BuilderInferface {
     public function lineNumbers(Query $query): string {
         $queryParams = $query->getParams();
         $sentence  = "SELECT COUNT(0) AS pages FROM {$queryParams->table}";
+        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
         if (count($queryParams->join)) {
             foreach ($queryParams->join as $join) {
-                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $join['table'] . ' ON ' . implode(' AND ', $join['on']);
+                $table = $join['table'];
+                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
             }
         }
         if (count($queryParams->where)) $sentence .= ' WHERE ' . implode(' AND ', $queryParams->where);

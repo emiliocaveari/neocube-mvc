@@ -2,9 +2,11 @@
 
 namespace NeoCube\Db;
 
+use NeoCube\Application;
 use NeoCube\Db\Query\BuilderInferface;
 use NeoCube\Db\Query\MysqlBuilder;
 use NeoCube\Db\Query\Query;
+use NeoCube\Error\ErrorType;
 use NeoCube\View;
 use PDOStatement;
 use PDO;
@@ -13,6 +15,7 @@ use PDOException;
 class Mapper {
 
     protected $_table = '';
+    protected $_alias = '';
     protected $_pk    = 'id';
 
     protected $error     = '';
@@ -36,14 +39,18 @@ class Mapper {
     private string $sentence = '';
     private int $rowCount    = 0;
 
-    public function __construct(string $table = '', string $pk = '') {
+    public function __construct(string $table = '', string $pk = '', string $alias = '') {
         if ($table and !$this->_table) {
             $this->_table = $table;
             $this->_pk    = $pk ?: 'id';
         }
+        $this->_alias = $alias ?: $this->_table;
+        
         $this->Db = Connection::factory();
-        $this->Query = new Query($this->_table);
         $this->Builder = new MysqlBuilder();
+        
+        $this->Query = new Query($this->_table);
+        if ($this->_alias != $this->_table) $this->Query->setAlias($this->_alias);
     }
 
     public function getError(): string {
@@ -162,7 +169,7 @@ class Mapper {
             try {
                 $query = $this->Db->prepare($this->sentence);
 
-                $input_parameters = array_merge($input_parameters,$this->bindValues);
+                $input_parameters = array_merge($input_parameters, $this->bindValues);
                 foreach ($input_parameters as $k => $v)
                     $query->bindValue($k, $v);
 
@@ -187,6 +194,12 @@ class Mapper {
 
     public function setCols(string|array $cols): static {
         $this->Query->setCols($cols);
+        return $this;
+    }
+
+    public function setAlias(?string $alias): static {
+        $this->_alias = $alias ?: $this->_table;
+        $this->Query->setAlias($alias);
         return $this;
     }
 
@@ -224,17 +237,21 @@ class Mapper {
         return $this;
     }
 
-    public function setJoin(string|Mapper $table, string $on, string $type = ''): static {
-        $where = [];
+    public function setJoin(string|Mapper $table, string $on = '', string $type = ''): static {
+        $on = empty($on) ? [] : [$on];
         if ($table instanceof Mapper) {
             $where = (array) $table->getParam('where');
             $bind  = (array) $table->getParam('bindvalues');
+            $alias  = (string) $table->getParam('alias');
             $table = (string) $table->getParam('table');
-
             if ($bind) $this->setBindValues($bind);
+            $on = array_merge($on, $where);
         }
-        $on = array_merge([$on], $where);
-        $this->Query->setJoin($table, $on, $type);
+        
+        if (empty($on))
+            Application::ErrorReporting()->dispatch("Not inform ON in Join Mapper!", ErrorType::INTERNAL);
+        
+        $this->Query->setJoin($table, $on, $type, ($alias ?? ''));
         return $this;
     }
 

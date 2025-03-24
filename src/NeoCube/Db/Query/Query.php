@@ -23,6 +23,7 @@ class Query {
         $this->params->limitOffset    = null;
         $this->params->group          = null;
         $this->params->groupHaving    = null;
+        $this->params->alias          = null;
     }
 
     public function getParams(): stdClass {
@@ -47,6 +48,8 @@ class Query {
                 return $this->params->group;
             case 'join':
                 return $this->params->join;
+            case 'alias':
+                return $this->params->alias;
             default:
                 return null;
         }
@@ -114,9 +117,10 @@ class Query {
         return $this;
     }
 
-    public function setJoin(string $table, array $on, string $type = ''): static {
-        $this->params->join[$table] = [
+    public function setJoin(string $table, array $on, string $type = '', string $alias = ''): static {
+        $this->params->join["{$table}{$alias}"] = [
             'table' => $table,
+            'alias' => $alias,
             'type' => $type,
             'on' => $on
         ];
@@ -134,6 +138,12 @@ class Query {
                 }
             }
         }
+        return $this;
+    }
+
+
+    public function setAlias(?string $alias): static {
+        $this->params->alias = $alias;
         return $this;
     }
 
@@ -175,6 +185,8 @@ class Query {
                 return !!count($this->params->order);
             case 'limit':
                 return !is_null($this->params->limit);
+            case 'alias':
+                return !is_null($this->params->alias);
             case 'group':
                 return !is_null($this->params->group);
             case 'join':
