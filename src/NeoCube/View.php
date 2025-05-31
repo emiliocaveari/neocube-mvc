@@ -17,6 +17,7 @@ class View {
     private string $_action;
     private array  $_data   = [];
 
+    private bool  $_export = true;
     private array $_link   = [];
     private array $_meta   = [];
     private array $_script = [];
@@ -80,6 +81,9 @@ class View {
         $this->_path['view'] = $view   ?: Env::getValue('VIEW_PATH');
         $this->_path['layout'] = $layout ?: Env::getValue('LAYOUT_PATH');
     }
+    final public function setExport(bool $export) {
+        $this->_export = $export;
+    }
 
 
     //--Get--//
@@ -123,7 +127,8 @@ class View {
         $this->_meta[] = new ScriptTag(type: 'meta', attributes: $attr);
     }
 
-    final public function exportTags() {
+    final public function exportTags() :array {
+        if (!$this->_export) return [];
         return [
             'link'   => $this->_link,
             'meta'   => $this->_meta,
@@ -159,7 +164,7 @@ class View {
     }
 
     //--Renderiza uma view diretamente na view atual --//
-    final public function renderView(View|string|array $view, bool|array $data = false, bool $exportTags = true): string {
+    final public function renderView(View|string|array $view, bool|array $data = false): string {
         if (!$view instanceof View) {
             $path = '';
             if (is_array($view)) list($viewname, $path) = $view;
@@ -171,16 +176,16 @@ class View {
             if (is_array($data)) $view->setData($data);
             else                 $view->setData($this->_data);
         }
-        $renderHTML = $view->render($exportTags);
-        if ($exportTags) $this->importTags($view->exportTags());
+        $renderHTML = $view->render();
+        $this->importTags($view->exportTags());
 
         return $renderHTML;
     }
 
     //--Renderiza a view atual
     //--Geralmente usado dentro do layout para renderizar a view
-    final public function render(bool $tagsExport = false): ?string {
-        $this->viewRender($tagsExport);
+    final public function render(): ?string {
+        $this->viewRender();
         return $this->_renderized;
     }
 
@@ -198,7 +203,7 @@ class View {
     //------------------------------------------------------------------------//
 
     //--Renderiza a view em _renderized
-    private function viewRender(bool $tagsExport = false): void {
+    private function viewRender(): void {
         if ($this->_renderized === null and $this->_view !== false) {
             $this->_renderized = '';
 
@@ -218,7 +223,7 @@ class View {
                 ob_end_clean();
 
                 //--Se a renderização tem layout ou exportar as tags
-                if ($this->_layout !== false or $tagsExport) {
+                if ($this->_layout !== false and $this->_export) {
                     //--Removendo link da View
                     $this->_renderized = preg_replace_callback('#<link(.*?)>#is', function ($matches) {
                         $this->_link[] = new ScriptTag(type: 'link', attributes: $matches[1]);

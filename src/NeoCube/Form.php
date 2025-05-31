@@ -90,7 +90,7 @@ class Form {
         }
     }
 
-    final public function attr(array |null $val = null): string|static {
+    final public function attr(array |null $val = null): array|string|static {
         if (is_null($val)) {
             return $this->attr;
         } else if (is_array($val)) {

@@ -10,16 +10,10 @@ class Session {
     static private $_flash = 'NEOCUBE_FLASH_MESSAGE';
     static private $_cache = 'NEOCUBE_CACHE_SESSION_DATA';
 
-    static private $_keys  = array('FLASH_MESSAGE','NEOCUBE_SESSION_MAIN');
-
     private function __construct() {}
 
-    static public function set(string $key, mixed $value) :bool {
-        if ( !in_array($key,self::$_keys) ){
-            $_SESSION[self::$_main][$key] = $value;
-            return true;
-        }
-        return false;
+    static public function set(string $key, mixed $value) :void {
+        $_SESSION[self::$_main][$key] = $value;
     }
 
     static public function get(string $key,bool $clear=false) :mixed{
@@ -96,6 +90,13 @@ class Session {
         }
         return '';
     }
+
+    //--clear Session Flash
+    static public function clearFlash(?string $key = null) :void {
+        if ( $key !== null ) unset($_SESSION[self::$_flash][$key]);
+        else unset($_SESSION[self::$_flash]);
+	}
+
 
 
     //-----------------------------------------------------------//
