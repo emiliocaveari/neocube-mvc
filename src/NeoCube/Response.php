@@ -5,12 +5,44 @@ namespace NeoCube;
 
 class Response {
 
-    const STATUS = array(
-        200 => '200 OK',
-        400 => '400 Bad Request',
-        422 => 'Unprocessable Entity',
-        500 => '500 Internal Server Error'
-    );
+
+    protected function __construct(
+        private ?string $html = null,
+        private mixed   $body = null,
+        private ?string $file = null,
+        private int     $code = 200,
+        private array   $header = [],
+        private bool    $clean = false,
+    ) {
+    }
+
+    public function getBody() {
+        return $this->body;
+    }
+    public function getCode() {
+        return $this->code;
+    }
+    public function getHeader() {
+        return $this->header;
+    }
+    public function getFile() {
+        return $this->file;
+    }
+
+
+    public function execute() {
+        if ($this->clean) ob_clean();
+        foreach ($this->header as $header)
+            header($header);
+        header('status: ' . $this->code);
+        http_response_code($this->code);
+        if ($this->html)
+            echo $this->html;
+        else if ($this->body)
+            echo json_encode($this->body);
+        else if ($this->file)
+            readfile($this->file);
+    }
 
     static public function getContentType(string $filename): string {
         $mime_types = array(
@@ -79,41 +111,38 @@ class Response {
         }
     }
 
-    static public function json(mixed $objJson, int $code = 200, bool $clean = false) : false {
-        if ($clean) ob_clean();
-        header('Content-Type: application/json');
-        http_response_code($code);
-        header('status: ' . $code);
-        echo json_encode($objJson);
-        return false;
+    static public function json(mixed $body, int $code = 200, bool $clean = false): static {
+        return new static(
+            body: $body,
+            code: $code,
+            clean: $clean,
+            header: ['Content-Type: application/json']
+        );
     }
 
-    static public function text(string $text, int $code = 200, bool $clean = false): false {
-        if ($clean) ob_clean();
-        header('Content-Type: text/plain');
-        http_response_code($code);
-        header("status: {$code}");
-        echo $text;
-        return false;
+    static public function text(string $text, int $code = 200, bool $clean = false): static {
+        return new static(
+            body: $text,
+            code: $code,
+            clean: $clean,
+            header: ['Content-Type: text/plain']
+        );
     }
 
-
-    static public function html(string $text, bool $clean = false): false {
-        if ($clean) ob_clean();
-        header('Content-Type: text/html');
-        http_response_code(200);
-        header('status: 200');
-        echo $text;
-        return false;
+    static public function html(string $html, bool $clean = false): static {
+        return new static(
+            html: $html,
+            clean: $clean,
+            header: ['Content-Type: text/html']
+        );
     }
 
-    static public function file($file, $contentType = null, int $code = 200, $clean = false): false {
+    static public function file(string $file, ?string $contentType = null, $clean = false): static {
         if (is_null($contentType)) $contentType = self::getContentType($file);
-        if ($clean) ob_clean();
-        header("Content-Type: {$contentType}");
-        http_response_code($code);
-        header("status: {$code}");
-        readfile($file);
-        return false;
+        return new static(
+            file: $file,
+            clean: $clean,
+            header: ["Content-Type: {$contentType}"]
+        );
     }
 }

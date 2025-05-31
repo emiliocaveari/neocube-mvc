@@ -44,20 +44,24 @@ abstract class Controller {
     }
 
 
-    final public function execute(): ?ViewRenderInterface {
+    final public function execute(): ViewRenderInterface|Response {
         if (!$this->view) $this->view = new View();
         $this->view->setController($this->_controller, $this->_action, $this->getViewPath());
 
         $action = $this->_action . '_';
         $this->_init();
         $actionData = $this->$action(...$this->_values);
-        return $actionData!==false ? $this->render($actionData) : null;
+        // return $actionData!==false ? $this->render($actionData) : null;
+        return ($actionData instanceof Response) 
+            ? $actionData
+            : $this->render($actionData);
     }
 
 
     public function render(mixed $actionData): ViewRenderInterface {
         if ($actionData instanceof ViewRenderInterface)
             return $actionData;
+        
         if (is_array($actionData)) {
             $status = $actionData['status'] ?? 200;
             $data = $actionData['data'] ?? $actionData;

@@ -18,7 +18,7 @@ class Router {
     static protected array $url = [];
     static protected string $publicDir = '/';
 
-    protected ?ViewRenderInterface $outView;
+    protected Response|ViewRenderInterface $outView;
     protected Controller $Controller;
 
     protected array $routes = array();
@@ -81,7 +81,7 @@ class Router {
 
     //--Redireciona pagina
     static public function redirect(array|string $controller, string|null $action = null, array|string|null $params = null): void {
-
+        if (php_sapi_name() == 'cli') return;
         if (is_array($controller)) {
             $aux = $controller;
             $controller = array_shift($aux);
@@ -143,18 +143,12 @@ class Router {
     //--FINAL PUBLIC FUNCTIONS--//
     //--------------------------//
     final public function writeOut(): void {
-        if ($this->outView) $this->outView->render();
+        if ($this->outView instanceof ViewRenderInterface) $this->outView->render();
+        else if ($this->outView instanceof Response) $this->outView->execute();
     }
 
     final public function getOut(): mixed {
-        if ($this->outView){
-            ob_start();
-            $this->outView->render();
-            $content = ob_get_contents();
-            ob_end_clean();
-            return $content;
-        }
-        return null;
+        return $this->outView;
     }
 
     final public function routing(?string $forceUrl = null): void {
@@ -167,7 +161,9 @@ class Router {
     }
 
     final static protected function urlGenerate(?string $forceUrl = null): void {
-        $urlParse = $forceUrl ? parse_url($forceUrl) : parse_url($_SERVER['REQUEST_URI']);
+        $urlParse = $forceUrl 
+            ? parse_url($forceUrl) 
+            : (isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI']) : '');
 
         $url = isset($urlParse['path']) ? $urlParse['path'] : '/';
         if (substr($url, -1, 1) != '/') $url .= '/';

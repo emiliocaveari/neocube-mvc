@@ -12,6 +12,6 @@ class RenderView implements ViewRenderInterface {
 
     public function render(): void {
         $html = $this->view->renderAll();
-        Response::html($html);
+        Response::html($html)->execute();
     }
 }

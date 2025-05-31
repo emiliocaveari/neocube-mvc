@@ -26,7 +26,7 @@ abstract class ErrorAbstract implements ErrorInterface {
         else      return $this->error;
     }
     //--Recebe o erro disparado no sistema
-    final public function dispatch(\Throwable | array | string $error=null, ?ErrorType $type=null) :void {
+    final public function dispatch(\Throwable | array | string | null $error=null, ?ErrorType $type=null) :void {
         $this->type = $type ?: ErrorType::INTERNAL;
         if ($error instanceOf \Throwable){
             $this->error = array(

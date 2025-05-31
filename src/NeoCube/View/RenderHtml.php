@@ -11,6 +11,6 @@ class RenderHtml implements ViewRenderInterface {
     }
 
     public function render(): void {
-        Response::html($this->html);
+        Response::html($this->html)->execute();
     }
 }

@@ -74,7 +74,8 @@ class Request {
     }
 
     static public function getHeader(string $header = '', bool $reload = false): mixed {
-        if (is_null(static::$_headers) or $reload) static::$_headers = getallheaders();
+        if (is_null(static::$_headers) or $reload) 
+            if ( function_exists('getallheaders') ) static::$_headers = getallheaders();
         return empty($header)
             ? static::$_headers
             : (isset(static::$_headers[$header]) ? static::$_headers[$header] : false);
