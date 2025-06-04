@@ -45,10 +45,10 @@ class Mapper {
             $this->_pk    = $pk ?: 'id';
         }
         $this->_alias = $alias ?: $this->_table;
-        
+
         $this->Db = Connection::factory();
         $this->Builder = new MysqlBuilder();
-        
+
         $this->Query = new Query($this->_table);
         if ($this->_alias != $this->_table) $this->Query->setAlias($this->_alias);
     }
@@ -181,6 +181,7 @@ class Mapper {
                 $this->errorCode = $e->getCode();
                 $this->errorInfo = $e->errorInfo;
                 $this->onErrorLog($this->sentence, $input_parameters, $e);
+                Application::ErrorReporting()->dispatch($e, ErrorType::INTERNAL);
                 return false;
             }
         } else {
@@ -247,10 +248,10 @@ class Mapper {
             if ($bind) $this->setBindValues($bind);
             $on = array_merge($on, $where);
         }
-        
+
         if (empty($on))
             Application::ErrorReporting()->dispatch("Not inform ON in Join Mapper!", ErrorType::INTERNAL);
-        
+
         $this->Query->setJoin($table, $on, $type, ($alias ?? ''));
         return $this;
     }
@@ -366,20 +367,25 @@ class Mapper {
     }
 
     public function lineNumbers(): int {
-        $sentence  = $this->Builder->lineNumbers($this->Query);
-        if ($query = $this->Db->prepare($sentence)) {
-            if ($this->bindValues)
-                foreach ($this->bindValues as $k => $v)
-                    if (strpos($sentence, $k) !== false)
-                        $query->bindValue($k, $v);
-            if ($query->execute()) {
-                $fetch = $query->fetch(PDO::FETCH_ASSOC);
-                if ($fetch === false) return 0;
-                $rowcount = $query->rowCount();
-                return ($rowcount > 1) ? intval($rowcount) : intval($fetch['pages']);
-            }
+        $sentence = $this->Builder->lineNumbers($this->Query);
+        $input_parameters = [];
+        foreach ($this->bindValues as $k => $v)
+            if (strpos($sentence, $k) !== false)
+                $input_parameters[$k] = $v;
+        try {
+            $query = $this->Db->prepare($sentence);
+            foreach ($input_parameters as $k => $v)
+                $query->bindValue($k, $v);
+            $query->execute();
+            $fetch = $query->fetch(PDO::FETCH_ASSOC);
+            if ($fetch === false) return 0;
+            $rowcount = $query->rowCount();
+            return ($rowcount > 1) ? intval($rowcount) : intval($fetch['pages']);
+        } catch (PDOException $e) {
+            $this->onErrorLog($sentence, $input_parameters, $e);
+            Application::ErrorReporting()->dispatch($e, ErrorType::INTERNAL);
+            return 0;
         }
-        return 0;
     }
 
     public function delete(string $pk_value = ''): bool {
