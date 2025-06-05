@@ -8,7 +8,7 @@ class File extends ElementAbstract {
 
     protected string $type = 'file';
 
-    public function accept(string $val=null) : self|string   {
+    public function accept(?string $val=null) : static|string   {
         if (is_null($val)){
             return isset($this->attr['accept']) ? $this->attr['accept'] : '';
         } else {
