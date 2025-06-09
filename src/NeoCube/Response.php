@@ -30,7 +30,7 @@ class Response {
     }
 
 
-    public function execute() {
+    final public function execute() {
         if ($this->clean) ob_clean();
         foreach ($this->header as $header)
             header($header);
@@ -122,7 +122,7 @@ class Response {
 
     static public function text(string $text, int $code = 200, bool $clean = false): static {
         return new static(
-            body: $text,
+            html: $text,
             code: $code,
             clean: $clean,
             header: ['Content-Type: text/plain']
