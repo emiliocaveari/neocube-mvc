@@ -20,9 +20,9 @@ class Query {
         $this->params->forUpdate      = false;
         $this->params->onDuplicateKey = false;
         $this->params->limit          = null;
-        $this->params->limitOffset    = null;
+        $this->params->offset         = null;
         $this->params->group          = null;
-        $this->params->groupHaving    = null;
+        $this->params->having         = null;
         $this->params->alias          = null;
     }
 
@@ -44,8 +44,12 @@ class Query {
                 return $this->params->order;
             case 'limit':
                 return $this->params->limit;
+            case 'offset':
+                return $this->params->offset;
             case 'group':
                 return $this->params->group;
+            case 'having':
+                return $this->params->having;
             case 'join':
                 return $this->params->join;
             case 'alias':
@@ -102,13 +106,13 @@ class Query {
 
     public function setLimit(int $limit, int $offset = 0): static {
         $this->params->limit = $limit;
-        $this->params->limitOffset = $offset;
+        $this->params->offset = $offset;
         return $this;
     }
 
     public function setGroup(string $group, string $having = ''): static {
         $this->params->group = $group;
-        $this->params->groupHaving = $having;
+        $this->params->having = $having;
         return $this;
     }
 
@@ -151,7 +155,7 @@ class Query {
     public function clear(array $clear = []): static {
 
         if (empty($clear))
-            $clear = ['data', 'cols', 'where', 'order', 'limit', 'group', 'join', 'forupdate', 'onduplicatekey'];
+            $clear = ['data', 'cols', 'where', 'order', 'join', 'forupdate', 'onduplicatekey', 'limit', 'group'];
 
         if (in_array('data', $clear))           $this->params->data = array();
         if (in_array('cols', $clear))           $this->params->cols = array();
@@ -162,12 +166,12 @@ class Query {
         if (in_array('onduplicatekey', $clear)) $this->params->onDuplicateKey = false;
 
         if (in_array('limit', $clear)) {
-            $this->params->limit          = null;
-            $this->params->limitOffset   = null;
+            $this->params->limit  = null;
+            $this->params->offset = null;
         }
         if (in_array('group', $clear)) {
-            $this->params->group          = null;
-            $this->params->groupHaving   = null;
+            $this->params->group  = null;
+            $this->params->having = null;
         }
 
         return $this;
@@ -185,10 +189,14 @@ class Query {
                 return !!count($this->params->order);
             case 'limit':
                 return !is_null($this->params->limit);
+            case 'offset':
+                return !is_null($this->params->offset);
             case 'alias':
                 return !is_null($this->params->alias);
             case 'group':
                 return !is_null($this->params->group);
+            case 'having':
+                return !is_null($this->params->having);
             case 'join':
                 return !!count($this->params->join);
             default:

@@ -241,6 +241,7 @@ class Mapper {
     public function setJoin(string|Mapper $table, string $on = '', string $type = ''): static {
         $on = empty($on) ? [] : [$on];
         if ($table instanceof Mapper) {
+            $joins = (array) $table->getParam('join');
             $where = (array) $table->getParam('where');
             $bind  = (array) $table->getParam('bindvalues');
             $alias  = (string) $table->getParam('alias');
@@ -253,6 +254,10 @@ class Mapper {
             Application::ErrorReporting()->dispatch("Not inform ON in Join Mapper!", ErrorType::INTERNAL);
 
         $this->Query->setJoin($table, $on, $type, ($alias ?? ''));
+
+        foreach (($joins ?? []) as $j)
+            $this->Query->setJoin($j['table'], $j['on'], $j['type'], $j['alias']);
+
         return $this;
     }
 

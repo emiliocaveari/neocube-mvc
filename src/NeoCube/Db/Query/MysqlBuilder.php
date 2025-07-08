@@ -28,7 +28,7 @@ class MysqlBuilder implements BuilderInferface {
 
         if ($queryParams->group) {
             $sentence .= ' GROUP BY ' . $queryParams->group;
-            if ($queryParams->groupHaving) $sentence .= ' HAVING ' . $queryParams->groupHaving;
+            if ($queryParams->having) $sentence .= ' HAVING ' . $queryParams->having;
         }
 
         if (count($queryParams->order))
@@ -36,7 +36,7 @@ class MysqlBuilder implements BuilderInferface {
 
         if ($queryParams->limit) {
             $sentence .= ' LIMIT ' . $queryParams->limit;
-            if ($queryParams->limitOffset) $sentence .= ' OFFSET ' . $queryParams->limitOffset;
+            if ($queryParams->offset) $sentence .= ' OFFSET ' . $queryParams->offset;
         }
 
         if ($queryParams->forUpdate)
