@@ -46,7 +46,7 @@ class Date {
         return true;
     }
 
-    static public function dateTimeDiff(string|DateTime $dateBegin, null|string|DateTime $dateEnd = null, string $return = DateDiffReturn::INTERVAL): int|DateInterval|false {
+    static public function dateTimeDiff(string|DateTime $dateBegin, string|DateTime $dateEnd = 'now', string $return = DateDiffReturn::INTERVAL): int|DateInterval|false {
 
         try {
             if (! $dateBegin instanceof DateTime)
