@@ -93,6 +93,10 @@ class Mapper {
     public function beginTransaction() {
         return $this->Db->beginTransaction();
     }
+    
+    public function inTransaction() {
+        return $this->Db->inTransaction();
+    }
 
     public function commit() {
         return $this->Db->commit();
