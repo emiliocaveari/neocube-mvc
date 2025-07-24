@@ -181,7 +181,6 @@ class Mapper {
                 $this->errorCode = $e->getCode();
                 $this->errorInfo = $e->errorInfo;
                 $this->onErrorLog($this->sentence, $input_parameters, $e);
-                Application::ErrorReporting()->dispatch($e, ErrorType::INTERNAL);
                 return false;
             }
         } else {
