@@ -54,9 +54,14 @@ class MysqlBuilder implements BuilderInferface {
             $bindKey = ":insk" . str_replace('.', '', $key);
             $keys_parameters[] = $key;
             if ($value instanceof Closure) {
-                list($newK, $newV) = $value($bindKey);
-                $bind_parameters[] = $newK;
-                $input_parameters[$bindKey] = $newV;
+                $closureRes = $value($bindKey, $queryParams->data);
+                if (is_array($closureRes)) {
+                    list($newK, $newV) = $closureRes;
+                    $bind_parameters[] = $newK;
+                    $input_parameters[$bindKey] = $newV;
+                } else {
+                    $bind_parameters[] = $closureRes;
+                }
             } else {
                 $bind_parameters[] = $bindKey;
                 $input_parameters[$bindKey] = $value;
@@ -71,9 +76,14 @@ class MysqlBuilder implements BuilderInferface {
             foreach ($queryParams->onDuplicateKey as $key => $value) {
                 $bindKey = ":dpkeyup" . str_replace('.', '', $key);
                 if ($value instanceof Closure) {
-                    list($newK, $newV) = $value($bindKey);
-                    $bindKeyValue[] = "{$key} = {$newK}";
-                    $input_parameters[$bindKey] = $newV;
+                    $closureRes = $value($bindKey, $queryParams->data);
+                    if (is_array($closureRes)) {
+                        list($newK, $newV) = $closureRes;
+                        $bindKeyValue[] = "{$key} = {$newK}";
+                        $input_parameters[$bindKey] = $newV;
+                    } else {
+                        $bindKeyValue[] = "{$key} = {$closureRes}";
+                    }
                 } else {
                     $bindKeyValue[] = "{$key} = {$bindKey}";
                     $input_parameters[$bindKey] = $value;
@@ -105,9 +115,14 @@ class MysqlBuilder implements BuilderInferface {
             foreach ($line as $key => $value) {
                 $bindKey = ":ikmult{$interate}" . str_replace('.', '', $key);
                 if ($value instanceof Closure) {
-                    list($newK, $newV) = $value($bindKey);
-                    $letBind[] = $newK;
-                    $input_parameters[$bindKey] = $newV;
+                    $closureRes = $value($bindKey, $line);
+                    if (is_array($closureRes)) {
+                        list($newK, $newV) = $closureRes;
+                        $letBind[] = $newK;
+                        $input_parameters[$bindKey] = $newV;
+                    } else {
+                        $letBind[] = $closureRes;
+                    }
                 } else {
                     $letBind[] = $bindKey;
                     $input_parameters[$bindKey] = $value;
@@ -137,9 +152,14 @@ class MysqlBuilder implements BuilderInferface {
         foreach ($queryParams->data as $key => $value) {
             $bindKey = ":upk" . str_replace('.', '', $key);
             if ($value instanceof Closure) {
-                list($newK, $newV) = $value($bindKey);
-                $bindKeyValue[] = "{$key} = {$newK}";
-                $input_parameters[$bindKey] = $newV;
+                $closureRes = $value($bindKey, $queryParams->data);
+                if (is_array($closureRes)) {
+                    list($newK, $newV) = $closureRes;
+                    $bindKeyValue[] = "{$key} = {$newK}";
+                    $input_parameters[$bindKey] = $newV;
+                } else {
+                    $bindKeyValue[] = "{$key} = {$closureRes}";
+                }
             } else {
                 $bindKeyValue[] = "{$key} = {$bindKey}";
                 $input_parameters[$bindKey] = $value;
