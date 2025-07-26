@@ -12,5 +12,6 @@ enum ErrorType {
     case WARNING;
     case STARTING;
     case INTERNAL;
+    case PDO;
 
 }

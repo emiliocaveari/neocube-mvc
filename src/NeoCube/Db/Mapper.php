@@ -93,17 +93,21 @@ class Mapper {
     public function beginTransaction() {
         return $this->Db->beginTransaction();
     }
-    
+
     public function inTransaction() {
         return $this->Db->inTransaction();
     }
 
     public function commit() {
-        return $this->Db->commit();
+        return $this->Db->inTransaction()
+            ? $this->Db->commit()
+            : false;
     }
 
     public function rollBack() {
-        return $this->Db->rollBack();
+        return $this->Db->inTransaction()
+            ? $this->Db->rollBack()
+            : false;
     }
 
     public function clear(string|array $type = ''): static {
