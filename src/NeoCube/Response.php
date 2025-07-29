@@ -31,7 +31,7 @@ class Response {
 
 
     final public function execute() {
-        if ($this->clean) ob_clean();
+        if ($this->clean and ob_get_length()) ob_clean();
         foreach ($this->header as $header)
             header($header);
         header('status: ' . $this->code);
