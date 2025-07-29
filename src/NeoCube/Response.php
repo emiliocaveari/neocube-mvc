@@ -12,7 +12,7 @@ class Response {
         private ?string $file = null,
         private int     $code = 200,
         private array   $header = [],
-        private bool    $clean = false,
+        private bool    $clean = true,
     ) {
     }
 
@@ -111,7 +111,7 @@ class Response {
         }
     }
 
-    static public function json(mixed $body, int $code = 200, bool $clean = false): static {
+    static public function json(mixed $body, int $code = 200, bool $clean = true): static {
         return new static(
             body: $body,
             code: $code,
@@ -120,7 +120,7 @@ class Response {
         );
     }
 
-    static public function text(string $text, int $code = 200, bool $clean = false): static {
+    static public function text(string $text, int $code = 200, bool $clean = true): static {
         return new static(
             html: $text,
             code: $code,
@@ -129,7 +129,7 @@ class Response {
         );
     }
 
-    static public function html(string $html, bool $clean = false): static {
+    static public function html(string $html, bool $clean = true): static {
         return new static(
             html: $html,
             clean: $clean,
@@ -137,7 +137,7 @@ class Response {
         );
     }
 
-    static public function file(string $file, ?string $contentType = null, $clean = false): static {
+    static public function file(string $file, ?string $contentType = null, $clean = true): static {
         if (is_null($contentType)) $contentType = self::getContentType($file);
         return new static(
             file: $file,
