@@ -3,7 +3,6 @@
 namespace NeoCube\View;
 
 use NeoCube\Response;
-use NeoCube\View;
 
 class RenderHtml implements ViewRenderInterface {
 

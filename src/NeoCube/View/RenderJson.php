@@ -14,6 +14,6 @@ class RenderJson implements ViewRenderInterface {
     }
 
     public function render(): void {
-        Response::json(body: $this->data, code:$this->status, clean:false)->execute();
+        Response::json(body: $this->data, code:$this->status)->execute();
     }
 }

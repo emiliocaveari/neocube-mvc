@@ -48,13 +48,14 @@ abstract class Controller {
         if (!$this->view) $this->view = new View();
         $this->view->setController($this->_controller, $this->_action, $this->getViewPath());
 
+        $actionData = $this->_init();
+        if ($actionData instanceof Response) return $actionData;
+        
         $action = $this->_action . '_';
-        $this->_init();
         $actionData = $this->$action(...$this->_values);
-        // return $actionData!==false ? $this->render($actionData) : null;
-        return ($actionData instanceof Response) 
-            ? $actionData
-            : $this->render($actionData);
+        if ($actionData instanceof Response) return $actionData;
+        
+        return $this->render($actionData);
     }
 
 

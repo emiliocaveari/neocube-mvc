@@ -2,9 +2,6 @@
 
 namespace NeoCube;
 
-use NeoCube\Application;
-use NeoCube\Controller;
-use NeoCube\Request;
 use NeoCube\Error\ErrorType;
 use NeoCube\Helper\Strings;
 use NeoCube\View\ViewRenderInterface;
@@ -147,7 +144,7 @@ class Router {
         else if ($this->outView instanceof Response) $this->outView->execute();
     }
 
-    final public function getOut(): mixed {
+    final public function getOut(): ViewRenderInterface|Response {
         return $this->outView;
     }
 
