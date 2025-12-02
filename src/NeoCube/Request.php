@@ -74,8 +74,8 @@ class Request {
     }
 
     static public function getHeader(string $header = '', bool $reload = false): mixed {
-        if (is_null(static::$_headers) or $reload) 
-            if ( function_exists('getallheaders') ) static::$_headers = getallheaders();
+        if (is_null(static::$_headers) or $reload)
+            if (function_exists('getallheaders')) static::$_headers = getallheaders();
         return empty($header)
             ? static::$_headers
             : (isset(static::$_headers[$header]) ? static::$_headers[$header] : false);
@@ -122,6 +122,13 @@ class Request {
 
     static public function httpController(string $url, ?array $data = null, ?string $method = null, ?array $headers = null) {
         $restore = [];
+
+        $query = parse_url($url)['query'] ?? null;
+        if ($query) {
+            parse_str($query, $params);
+            $data = array_merge($data, $params);
+        }
+
         if ($data) {
             $restore['data'] = static::$_data;
             static::$_data = $data;

@@ -4,11 +4,11 @@ namespace NeoCube\Form;
 
 abstract class ElementAbstract {
 
-    protected array $attr      = array();
-    protected array $attrLabel = array();
-    protected array $attrError = array();
-    protected string $label    = '';
-    protected string $type     = '';
+    protected array $attr        = array();
+    protected array $attrLabel   = array();
+    protected array $attrError   = array();
+    protected bool|string $label = '';
+    protected string $type       = '';
 
     protected $attrList = array(
         'label',
@@ -42,7 +42,7 @@ abstract class ElementAbstract {
     }
 
     public function name(string|bool|null $val = null): string | static {
-        if (is_null($val) or $val === true) {
+        if ($val === null or $val === true) {
             if (isset($this->attr['name'])) {
                 $name = $this->attr['name'];
                 //--apenas nome inicial
@@ -72,8 +72,8 @@ abstract class ElementAbstract {
         return $this;
     }
 
-    public function label(?string $val = null): string | static {
-        if (is_null($val)) {
+    public function label(string|bool|null $val = null): string | static {
+        if ($val === null) {
             if ($this->label) return $this->label;
             else if ($this->label !== false) {
                 $name = (string) $this->attr('name');
@@ -89,7 +89,7 @@ abstract class ElementAbstract {
     }
 
     public function id(string|bool|null $val = null): string | static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['id']) ? $this->attr['id'] : '';
         } else {
             if ($val !== false) $this->attr['id'] = trim("{$val}");
@@ -99,7 +99,7 @@ abstract class ElementAbstract {
     }
 
     public function value(array|string|bool|null $val = null): string | array | static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['value']) ? $this->attr['value'] : '';
         } else {
             if ($val === false) unset($this->attr['value']);
@@ -112,7 +112,7 @@ abstract class ElementAbstract {
     }
 
     public function maxlength(null|int|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['maxlength']) ? $this->attr['maxlength'] : '';
         } else {
             if ($val !== false) $this->attr['maxlength'] = trim("{$val}");
@@ -122,7 +122,7 @@ abstract class ElementAbstract {
     }
 
     public function minlength(null|int|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['minlength']) ? $this->attr['minlength'] : '';
         } else {
             if ($val !== false) $this->attr['minlength'] = trim("{$val}");
@@ -132,7 +132,7 @@ abstract class ElementAbstract {
     }
 
     public function step(null|int|string|float $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['step']) ? $this->attr['step'] : '';
         } else {
             if ($val !== false) $this->attr['step'] = trim("{$val}");
@@ -142,7 +142,7 @@ abstract class ElementAbstract {
     }
 
     public function max(null|int|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['max']) ? $this->attr['max'] : '';
         } else {
             if ($val !== false) $this->attr['max'] = trim("{$val}");
@@ -152,7 +152,7 @@ abstract class ElementAbstract {
     }
 
     public function min(null|int|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['min']) ? $this->attr['min'] : '';
         } else {
             if ($val !== false) $this->attr['min'] = trim("{$val}");
@@ -162,7 +162,7 @@ abstract class ElementAbstract {
     }
 
     public function placeholder(null|bool|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['placeholder']) ? $this->attr['placeholder'] : '';
         } else {
             if ($val !== false) $this->attr['placeholder'] = trim("{$val}");
@@ -172,7 +172,7 @@ abstract class ElementAbstract {
     }
 
     public function pattern(null|bool|string $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['pattern']) ? $this->attr['pattern'] : '';
         } else {
             if ($val !== false) $this->attr['pattern'] = trim("{$val}");
@@ -182,7 +182,7 @@ abstract class ElementAbstract {
     }
 
     public function readonly(?bool $val = null): bool|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['readonly']) ? true : false;
         } else {
             if ($val) $this->attr['readonly'] = true;
@@ -192,7 +192,7 @@ abstract class ElementAbstract {
     }
 
     public function disabled(?bool $val = null): bool|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['disabled']) ? true : false;
         } else {
             if ($val) $this->attr['disabled'] = true;
@@ -202,7 +202,7 @@ abstract class ElementAbstract {
     }
 
     public function autofocus(?bool $val = null): bool|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['autofocus']) ? true : false;
         } else {
             if ($val) $this->attr['autofocus'] = true;
@@ -212,7 +212,7 @@ abstract class ElementAbstract {
     }
 
     public function autocomplete(null|bool|string $val = null): null|string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['autocomplete']) ? $this->attr['autocomplete'] : null;
         } else {
             if (in_array($val, ['on', 'off'], true)) $this->attr['autocomplete'] = $val;
@@ -222,7 +222,7 @@ abstract class ElementAbstract {
     }
 
     public function required(?bool $val = null): bool|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['required']) ? true : false;
         } else {
             if ($val) $this->attr['required'] = true;
@@ -232,7 +232,7 @@ abstract class ElementAbstract {
     }
 
     public function title(null|string|bool $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             return isset($this->attr['title']) ? $this->attr['title'] : '';
         } else {
             if ($val !== false) $this->attr['title'] = trim("{$val}");
@@ -241,12 +241,12 @@ abstract class ElementAbstract {
         }
     }
 
-    public function error(null|bool|array $val = null): static | array {
-        if (is_null($val)) {
+    public function error(null|false|array $val = null): static | array {
+        if ($val === null) {
             return $this->attrError;
         } else {
             if ($val !== false) $this->attrError = $val;
-            else  $this->attrError = null;
+            else  $this->attrError = [];
             return $this;
         }
     }
@@ -284,7 +284,7 @@ abstract class ElementAbstract {
     }
 
     public function attrLabel(null|string|array $val = null): string|static {
-        if (is_null($val)) {
+        if ($val === null) {
             $rt = '';
             foreach ($this->attrLabel as $att => $value) $rt .= $att . '="' . $value . '" ';
             return $rt;

@@ -18,8 +18,8 @@ class Captcha extends ElementAbstract {
         $val1 = rand(1,9);
         $val2 = rand(1,9);
         $this->token = ($val1 + $val2);
-        $this->label = $val1 .' + '.$val2 .' = ?';
-        $this->placeholder($val1 .' + '.$val2 .' = ?');
+        $this->label("$val1 + $val2 = ?");
+        $this->placeholder("$val1 + $val2 = ?");
     }
 
     public function input() : string{
