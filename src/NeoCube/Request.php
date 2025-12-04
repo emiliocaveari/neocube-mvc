@@ -126,7 +126,7 @@ class Request {
         $query = parse_url($url)['query'] ?? null;
         if ($query) {
             parse_str($query, $params);
-            $data = array_merge($data, $params);
+            $data = array_merge(($data ?? []), $params);
         }
 
         if ($data) {

@@ -131,25 +131,26 @@ class Validate {
 
             if (!empty($argument['is']) and $strlen > 0) {
                 $is = strtolower($argument['is']);
-                if ($required) {
-                    $status = match ($is) {
-                        'string' => is_string($value),
-                        'numeric' => is_numeric(trim("$value")),
-                        'int', 'integer' => filter_var($value, FILTER_VALIDATE_INT),
-                        'float' => filter_var($value, FILTER_VALIDATE_FLOAT),
-                        'datetime' => Date::dateTimeFormat($value),
-                        'date' => Date::dateFormat($value),
-                        'time' => Date::timeFormat($value),
-                        default => true
-                    };
-                }
-                if ($status) $status = match ($is) {
-                    'email' => filter_var($value, FILTER_VALIDATE_EMAIL),
-                    'domain' => filter_var($value, FILTER_VALIDATE_DOMAIN),
-                    'ip' => filter_var($value, FILTER_VALIDATE_IP),
-                    'url' => filter_var($value, FILTER_VALIDATE_URL),
+
+                $status = match ($is) {
+                    'string' => is_string($value),
+                    'numeric' => is_numeric(trim("$value")),
+                    'int', 'integer' => filter_var($value, FILTER_VALIDATE_INT) !== false,
+                    'float' => filter_var($value, FILTER_VALIDATE_FLOAT) !== false,
+                    'datetime' => Date::dateTimeFormat($value),
+                    'date' => Date::dateFormat($value),
+                    'time' => Date::timeFormat($value),
                     default => true
                 };
+
+                if ($status)
+                    $status = match ($is) {
+                        'email' => filter_var($value, FILTER_VALIDATE_EMAIL),
+                        'domain' => filter_var($value, FILTER_VALIDATE_DOMAIN),
+                        'ip' => filter_var($value, FILTER_VALIDATE_IP),
+                        'url' => filter_var($value, FILTER_VALIDATE_URL),
+                        default => true
+                    };
 
                 if ($status === false) $errors['is'] = 'intalid';
             }
