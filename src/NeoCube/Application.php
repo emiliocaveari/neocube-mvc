@@ -37,10 +37,10 @@ final class Application{
         static::$_Error = $Error;
     }
     static public function ErrorReporting() : ErrorAbstract{
+        if (!static::$_Error) static::$_Error = new Error();
         return static::$_Error;
     }
     static public function startErrorReporting() : void {
-        if (!static::$_Error) static::$_Error = new Error();
 
         set_error_handler(array('NeoCube\Error\Controller','handler'));
         register_shutdown_function(array('NeoCube\Error\Controller','shutdown'));
@@ -66,7 +66,7 @@ final class Application{
                     'line'    => 0,
                     'context' => null
                 );
-                static::$_Error->dispatch($error,ErrorType::STARTING);
+                static::ErrorReporting()->dispatch($error,ErrorType::STARTING);
             }
         }
     }

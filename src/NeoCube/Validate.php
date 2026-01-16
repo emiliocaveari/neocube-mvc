@@ -9,14 +9,17 @@ class Validate {
     static array $_dataErros = [];
 
 
+    static function clear(): void {
+        static::$_dataErros = [];
+    }
+
     static function getDataErrors(): array {
         return static::$_dataErros;
     }
 
     static public function data(array $data, array $arguments): bool {
-        static::$_dataErros = [];
         foreach ($arguments as $key => $argument) {
-            if (!isset($data[$key])) $data[$key] = '';
+            if (!isset($data[$key])) $data[$key] = null;
             if (
                 !is_array($data[$key]) or
                 isset($argument['multiple']) or
@@ -87,19 +90,19 @@ class Validate {
                 $errors['captcha'] = 'invalid';
             }
 
-            if (isset($argument['dateformat']) and $strlen > 0) {
+            if (isset($argument['dateformat']) and $strlen) {
                 if (!preg_match('/^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/', $value)) {
                     $errors['dateformat'] = 'intalid';
                 }
             }
 
-            if (isset($argument['date']) and $strlen > 0 and !Date::dateFormat($value)) {
+            if (isset($argument['date']) and $strlen and !Date::dateFormat($value)) {
                 $errors['date'] = 'intalid';
             }
-            if (isset($argument['time']) and $strlen > 0 and !Date::timeFormat($value)) {
+            if (isset($argument['time']) and $strlen and !Date::timeFormat($value)) {
                 $errors['time'] = 'intalid';
             }
-            if (isset($argument['datetime']) and $strlen > 0 and !Date::dateTimeFormat($value)) {
+            if (isset($argument['datetime']) and $strlen and !Date::dateTimeFormat($value)) {
                 $errors['datetime'] = 'intalid';
             }
 
@@ -123,14 +126,15 @@ class Validate {
                 $errors['string'] = 'invalid';
             }
 
-            if (!empty($argument['pattern']) and $strlen > 0) {
+            if (!empty($argument['pattern']) and $strlen) {
                 if (!preg_match("/{$argument['pattern']}/", $value)) {
                     $errors['pattern'] = 'intalid';
                 }
             }
 
-            if (!empty($argument['is']) and $strlen > 0) {
+            if (!empty($argument['is']) and ($strlen or $value !== null)) {
                 $is = strtolower($argument['is']);
+                if (substr($is,0,1) === '?' and !$value) return true;
 
                 $status = match ($is) {
                     'string' => is_string($value),

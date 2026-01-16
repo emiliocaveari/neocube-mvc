@@ -87,11 +87,12 @@ class Request {
     }
     static public function isMethod($method): bool {
         if (is_null(static::$_data)) static::readRequestData();
-        return (static::$_method === strtoupper($method));
+        return (strtoupper(static::$_method) === strtoupper($method));
     }
 
     static public function validateData(array $arguments, $data = null): bool {
         if (is_null($data)) $data = static::getData();
+        Validate::clear();
         return Validate::data($data, $arguments);
     }
 
@@ -135,7 +136,7 @@ class Request {
         }
         if ($method and in_array(strtolower($method), ['get', 'post', 'put', 'delete'])) {
             $restore['method'] = static::$_method;
-            static::$_method = $method;
+            static::$_method = strtoupper($method);
         }
         if ($headers) {
             $restore['headers'] = static::$_headers;
