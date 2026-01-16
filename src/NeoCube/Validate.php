@@ -132,9 +132,8 @@ class Validate {
                 }
             }
 
-            if (!empty($argument['is']) and ($strlen or $value !== null)) {
+            if (!empty($argument['is']) and $strlen) {
                 $is = strtolower($argument['is']);
-                if (substr($is,0,1) === '?' and !$value) return true;
 
                 $status = match ($is) {
                     'string' => is_string($value),
