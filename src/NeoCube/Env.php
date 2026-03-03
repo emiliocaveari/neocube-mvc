@@ -41,12 +41,12 @@ class Env {
     }
 
 
-    static public function get(array | string $value) {
+    static public function get(array | string $value, string $defaultEmpty = '') {
         return match (true) {
             is_string($value) => self::getValue($value),
             is_array($value)  => self::getValues($value),
             default => null
-        };
+        } ?: $defaultEmpty;
     }
 
     static public function getValue(string $name) {

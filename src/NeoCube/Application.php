@@ -21,10 +21,10 @@ final class Application{
         Env::setValue('ENVIRONMENT',$environment);
     }
     static public function isEnvironment($environment){
+        $env = Env::getValue('ENVIRONMENT');
         return (Env::getValue('ENVIRONMENT') === $environment);
     }
 
-    //--Router
     static public function setRouter(Router $Router){
         static::$router = $Router;
     }
@@ -32,7 +32,6 @@ final class Application{
         return static::$router;
     }
     
-    //--ERROS
     static public function setErrorReporting(ErrorAbstract $Error){
         static::$_Error = $Error;
     }
@@ -45,7 +44,6 @@ final class Application{
         set_error_handler(array('NeoCube\Error\Controller','handler'));
         register_shutdown_function(array('NeoCube\Error\Controller','shutdown'));
 
-        //--Tratamento de envio de arquivo maior que o permitido pela configuração do PHP_INI
         if (isset($_SERVER['REQUEST_METHOD']) and $_SERVER['REQUEST_METHOD'] == 'POST' and isset($_SERVER['CONTENT_LENGTH']) and $_SERVER['CONTENT_LENGTH'] > 0 ) {
             $displayMaxSize = ini_get('post_max_size');
             $size = null;
@@ -70,14 +68,11 @@ final class Application{
             }
         }
     }
-    
 
-
-    //--Estrutura em modelos
     static public function startModules(?Router $Router = null){
         static::startErrorReporting();
 
-        if ($Router) static::$router = $Router;
+        static::$router = $Router ?? new Router();
 
         static::$router->routing();
         static::$router->writeOut();

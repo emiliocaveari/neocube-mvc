@@ -8,22 +8,10 @@ class Checkbox extends ElementAbstract {
 
     protected string $type = 'checkbox';
 
-    public function checked($val = null) {
-        if (is_null($val)) {
-            return isset($this->attr['checked']) ? true : false;
-        } else {
-            if ((bool)$val) $this->attr['checked'] = true;
-            else  unset($this->attr['checked']);
-            return $this;
-        }
-    }
-
     public function value(array|string|bool|null $val = null): string | array | static {
         if (is_null($val)) {
             return isset($this->attr['value']) ? $this->attr['value'] : '';
         } else {
-            //--Emilio 07-02-2014
-            //--Se valor igual a 'on' seta como checked
             if ($val == 'on') {
                 $this->attr['checked'] = true;
                 return $this;

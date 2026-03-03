@@ -8,7 +8,7 @@ class Sqlite implements AdapterInterface {
 
     private static $instance;
 
-    static function getConnection($db,$database) {
+    static function getConnection($db,$database) : PDO {
         if (!isset(self::$instance[$database])) {
             $dsn = 'sqlite:'.$db['dbname'];
             $PDO = new PDO($dsn);

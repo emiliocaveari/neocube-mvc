@@ -10,9 +10,9 @@ class Cache {
 		protected string $time = '5 minutes'
 	) {
 		if (!$this->folder)
-			$this->folder = Env::getValue('CACHE_PATH') ?: sys_get_temp_dir();
+			$this->folder = Env::getValue('NEOCUBE_CACHE_PATH') ?: sys_get_temp_dir();
 		if (is_numeric($this->time)) 
-			$this->time .= ' minutes';
+			$this->time .= ' seconds';
 	}
 
 	final protected function generateFileLocation(string $key): string {
@@ -22,7 +22,7 @@ class Cache {
 	final protected function createCacheFile(string $key, string $content): bool {
 		if (!file_exists($this->folder) or !is_dir($this->folder) or !is_writable($this->folder)) {
 			Application::ErrorReporting()->dispatch([
-				'message' => 'Não foi possível acessar a pasta de cache "' . $this->folder . '"',
+				'message' => 'Unable to access the cache folder "' . $this->folder . '"',
 				'file'    => __FILE__,
 				'line'    => 20,
 			]);
@@ -40,7 +40,7 @@ class Cache {
 
 	final public function save(string $key, mixed $content, ?string $time = null): bool {
 		$expires = ($time) 
-			? (is_numeric($time) ? strtotime($time . ' minutes') : strtotime($time))
+			? (is_numeric($time) ? strtotime($time . ' seconds') : strtotime($time))
 			: strtotime($this->time);
 		
 		$content = serialize(array(

@@ -57,7 +57,6 @@ class Monetary {
         return isset($value) ? $value : null;
     }
 
-    //--Converte um numero float para extenso
     static function numberToExt($number, $moeda = true) {
         if ($number >= self::MIN && $number <= self::MAX) {
             $value = self::conversionR((int)$number);

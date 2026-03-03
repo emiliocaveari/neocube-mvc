@@ -14,30 +14,32 @@ use PDOException;
 
 class Mapper {
 
-    protected $_table = '';
-    protected $_alias = '';
-    protected $_pk    = 'id';
-
-    protected $error     = '';
-    protected $saveInfo  = '';
-
+    protected string  $_table = '';
+    protected string  $_alias = '';
+    protected string  $_pk    = 'id';
+    
+    protected string $error     = '';
+    protected string $saveInfo  = '';
+    
+    protected ?string $_connection = null;
     protected ?PDO $Db;
 
     private ?Query $Query  = null;
     private ?BuilderInferface $Builder = null;
 
-    private $errorCode = null;
-    private $errorInfo = null;
+    private mixed  $errorCode = null;
+    private ?array $errorInfo = null;
 
-    private $paginate   = null;
-    private array $bindValues = [];
-    private bool $execute    = true;
+    private ?array $paginate   = null;
+    private array  $bindValues = [];
+    private bool   $execute    = true;
+
     private bool|PDOStatement $fetchStm = false;
-    private $fetchMode  = PDO::FETCH_ASSOC;
-    private $fetchClass = 'stdClass';
+    private int    $fetchMode  = PDO::FETCH_ASSOC;
+    private string $fetchClass = 'stdClass';
 
     private string $sentence = '';
-    private int $rowCount    = 0;
+    private int    $rowCount = 0;
 
     public function __construct(string $table = '', string $pk = '', string $alias = '') {
         if ($table and !$this->_table) {
@@ -46,7 +48,7 @@ class Mapper {
         }
         $this->_alias = $alias ?: $this->_table;
 
-        $this->Db = Connection::factory();
+        $this->Db = Connection::factory($this->_connection);
         $this->Builder = new MysqlBuilder();
 
         $this->Query = new Query($this->_table);
@@ -303,6 +305,7 @@ class Mapper {
     }
 
     public function save(array $data): int|false {
+        if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
         if (isset($data[$this->_pk])) {
             if (!empty($data[$this->_pk])) $id = $data[$this->_pk];
             unset($data[$this->_pk]);
@@ -365,6 +368,7 @@ class Mapper {
     public function find(string $id = ''): bool|array|object {
         if (empty($this->sentence)) {
             if (!empty($id)) {
+                if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
                 $this->Query->setWhere($this->_table . '.' . $this->_pk . '=:findprimarykey');
                 $this->setBindValues([':findprimarykey' => $id]);
             }
@@ -402,6 +406,7 @@ class Mapper {
 
     public function delete(string $pk_value = ''): bool {
         if ($pk_value) {
+            if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
             $this->Query->setWhere($this->_table . '.' . $this->_pk . '=:deleteprimarykey');
             $this->setBindValues([':deleteprimarykey' => $pk_value]);
         }
@@ -437,8 +442,10 @@ class Mapper {
         if ($params['empty'] !== false)
             $select = array_merge(['empty' => ($params['empty'] === true ? '' : $params['empty'])], $select);
 
-        if (empty($key))
+        if (empty($key)){
+            if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
             $key = "{$this->_table}.{$this->_pk}";
+        }
 
         $cols[] = $key;
 

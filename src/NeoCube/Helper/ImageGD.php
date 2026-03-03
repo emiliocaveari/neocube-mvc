@@ -1,12 +1,12 @@
 <?php
 
-namespace NeoCube\Image;
+namespace NeoCube\Helper;
 
 use GdImage;
 
-class GD implements ImageInterface {
+class ImageGD {
 
-    protected \GdImage $working_image;
+    protected GdImage $working_image;
 
     protected array $info;
     protected array $original_info;
@@ -243,7 +243,7 @@ class GD implements ImageInterface {
      * @param string|int $pos_x [L,R,C]
      * @param string|int $pos_y [T,D,C]
      */
-    public function mergeImage(GD $merge_image, string|int $pos_x = 0, string|int $pos_y = 0, int $pad_x = 0, int $pad_y = 0) {
+    public function mergeImage(ImageGD $merge_image, string|int $pos_x = 0, string|int $pos_y = 0, int $pad_x = 0, int $pad_y = 0) {
 
         $info = $merge_image->getInfo();
 
@@ -378,7 +378,7 @@ class GD implements ImageInterface {
     }
 
 
-    private function html2rgb(string $color): array {
+    private function html2rgb(string $color): array | false {
         if ($color[0] == '#') {
             $color = substr($color, 1);
         }

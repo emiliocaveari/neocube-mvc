@@ -4,7 +4,6 @@ namespace NeoCube;
 
 class Cookie {
 
-    //--Construtor privado
     private function __construct() {}
 
 
@@ -24,7 +23,7 @@ class Cookie {
         return false;
     }
 
-    static public function setted(string $key) : bool {
+    static public function has(string $key) : bool {
         if (isset($_COOKIE[$key])) return true;
         return false;
     }

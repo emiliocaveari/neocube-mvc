@@ -1,4 +1,5 @@
 <?php
+
 namespace NeoCube;
 
 use NeoCube\View;
@@ -10,28 +11,29 @@ class Session {
     static private $_flash = 'NEOCUBE_FLASH_MESSAGE';
     static private $_cache = 'NEOCUBE_CACHE_SESSION_DATA';
 
-    private function __construct() {}
+    private function __construct() {
+    }
 
-    static public function set(string $key, mixed $value) :void {
+    static public function set(string $key, mixed $value): void {
         $_SESSION[self::$_main][$key] = $value;
     }
 
-    static public function get(string $key,bool $clear=false) :mixed{
-        if ( isset($_SESSION[self::$_main][$key]) ){
+    static public function get(string $key, bool $clear = false): mixed {
+        if (isset($_SESSION[self::$_main][$key])) {
             $data = $_SESSION[self::$_main][$key];
-            if ( $clear ) unset($_SESSION[self::$_main][$key]);
+            if ($clear) unset($_SESSION[self::$_main][$key]);
             return $data;
         }
         return false;
     }
 
-    static public function setted(string $key) :bool {
-        if ( isset($_SESSION[self::$_main][$key]) ) return true;
+    static public function has(string $key): bool {
+        if (isset($_SESSION[self::$_main][$key])) return true;
         return false;
     }
 
-    static public function clear(string $key) :void{
-        if ( isset($_SESSION[self::$_main][$key]) ){
+    static public function clear(string $key): void {
+        if (isset($_SESSION[self::$_main][$key])) {
             unset($_SESSION[self::$_main][$key]);
         }
     }
@@ -41,31 +43,43 @@ class Session {
     //-----------------------------------------------------------//
 
     //--set Session Flash
-    static public function setFlash(string|array $mensagem,string $key='default') :void {
-        $_SESSION[self::$_flash] [$key] [] = $mensagem;
+    static public function setFlash(string|array $mensagem, string $key = 'default'): void {
+        $_SESSION[self::$_flash][$key][] = $mensagem;
+    }
+    static public function hasFlash(string $key = 'default'): bool {
+        return isset($_SESSION[self::$_flash][$key]);
+    }
+    //--set Session Flash
+    static public function getFlash(string $key = 'default', bool $remove = true): string|array {
+        $arrMessage = '';
+        if (isset($_SESSION[self::$_flash][$key])) {
+            $arrMessage = $_SESSION[self::$_flash][$key];
+            if ($remove) unset($_SESSION[self::$_flash][$key]);
+        }
+        return $arrMessage;
     }
     //--get Session Flash
-    static public function flash(string|array $template,$key='default') :string {
+    static public function flash(string|array $template, $key = 'default'): string {
 
-        if ( isset( $_SESSION[self::$_flash] [$key] ) ){
+        if (isset($_SESSION[self::$_flash][$key])) {
 
-            $arrMessage = $_SESSION[self::$_flash] [$key];
-            unset($_SESSION[self::$_flash] [$key]);
+            $arrMessage = $_SESSION[self::$_flash][$key];
+            unset($_SESSION[self::$_flash][$key]);
 
             $htmlReturn = '';
 
             //--Se for array então instancia uma view
-            if ( is_array($template) ){
+            if (is_array($template)) {
                 //--Instancindo view
                 $viewName = array_shift($template);
                 $viewPath = array_shift($template);
                 foreach ($arrMessage as $msg) {
-                    $view = new View($viewName,$viewPath);
+                    $view = new View($viewName, $viewPath);
                     //--Se for array passa valores para a view
-                    if ( is_array($msg) ){
+                    if (is_array($msg)) {
                         $view->setData($msg);
                     } else {
-                        $view->setData('MESSAGE',$msg);
+                        $view->setData('MESSAGE', $msg);
                     }
                     $htmlReturn .= $view->render();
                 }
@@ -74,13 +88,13 @@ class Session {
             }
 
             //--Se for string
-            if ( is_string($template) ){
+            if (is_string($template)) {
                 foreach ($arrMessage as $msg) {
                     //--Se for array substitui o valores nas respectivas keys
-                    if ( is_array($msg) ){
+                    if (is_array($msg)) {
                         $keys   = array_keys($msg);
                         $values = array_values($msg);
-                        $htmlReturn .= str_replace($keys,$values,$template);
+                        $htmlReturn .= str_replace($keys, $values, $template);
                     } else {
                         $htmlReturn .= str_replace("MESSAGE", $msg, $template);
                     }
@@ -92,10 +106,10 @@ class Session {
     }
 
     //--clear Session Flash
-    static public function clearFlash(?string $key = null) :void {
-        if ( $key !== null ) unset($_SESSION[self::$_flash][$key]);
+    static public function clearFlash(?string $key = null): void {
+        if ($key !== null) unset($_SESSION[self::$_flash][$key]);
         else unset($_SESSION[self::$_flash]);
-	}
+    }
 
 
 
@@ -103,33 +117,31 @@ class Session {
     //--CACHE DATA-----------------------------------------------//
     //-----------------------------------------------------------//
 
-    static public function setCache(string $key, mixed $content, string $time = '5 minutes') :void {
-		$time = is_numeric($time) ? strtotime($time.' minutes') : strtotime($time);
-		$content = serialize([
-			'expires' => $time,
-			'content' => $content
+    static public function setCache(string $key, mixed $content, string $time = '5 minutes'): void {
+        $time = is_numeric($time) ? strtotime($time . ' minutes') : strtotime($time);
+        $content = serialize([
+            'expires' => $time,
+            'content' => $content
         ]);
         $_SESSION[self::$_cache][$key] = $content;
-	}
+    }
 
 
-	static public function getCache(string $key) :mixed {
-        if ( isset($_SESSION[self::$_cache][$key]) ){
+    static public function getCache(string $key): mixed {
+        if (isset($_SESSION[self::$_cache][$key])) {
             $cache = unserialize($_SESSION[self::$_cache][$key]);
             if ($cache['expires'] > time()) {
-				return $cache['content'];
-			} else {
+                return $cache['content'];
+            } else {
                 unset($_SESSION[self::$_cache][$key]);
-			}
+            }
         }
         return null;
-	}
+    }
 
-	static public function clearCache(string $key) :void {
-        if ( isset($_SESSION[self::$_cache][$key]) ){
+    static public function clearCache(string $key): void {
+        if (isset($_SESSION[self::$_cache][$key])) {
             unset($_SESSION[self::$_cache][$key]);
         }
-	}
-
-
+    }
 }

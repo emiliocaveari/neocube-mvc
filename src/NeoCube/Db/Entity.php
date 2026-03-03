@@ -14,29 +14,16 @@ class Entity {
         if ($data) $this->data = $data;
     }
 
-
-    /**
-     * @param $name
-     * @param $value
-     */
     public function __set(string $name, $value): void {
         $setName = Strings::toCamelCase("set_$name");
         if (method_exists($this, $setName)) $this->$setName($value);
         else $this->data[$name] = $value;
     }
 
-    /**
-     * @param $name
-     * @return bool
-     */
     public function __isset($name): bool {
         return isset($this->data[$name]);
     }
 
-    /**
-     * @param $name
-     * @return string|null
-     */
     public function __get($name): mixed {
 
         $camelName = Strings::toCamelCase($name, '_');

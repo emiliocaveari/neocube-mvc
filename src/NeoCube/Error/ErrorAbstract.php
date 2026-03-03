@@ -11,7 +11,6 @@ abstract class ErrorAbstract implements ErrorInterface {
 
     public function onError(){}
 
-    //--Final class - não podem ser alteradas pelas classes filhas
     final public function getMessage() :string { return $this->getError('message'); }
     final public function getCode()    :string { return $this->getError('code');    }
     final public function getFile()    :string { return $this->getError('file');    }
@@ -21,12 +20,13 @@ abstract class ErrorAbstract implements ErrorInterface {
     final public function getType() : ?ErrorType {
         return $this->type;
     }
+
     final public function getError($col=null){
         if ($col) return isset($this->error[$col]) ? $this->error[$col] : null;
         else      return $this->error;
     }
-    //--Recebe o erro disparado no sistema
-    final public function dispatch(\Throwable | array | string | null $error=null, ?ErrorType $type=null) :void {
+
+    final public function dispatch(\Throwable | array | string | null $error=null, ?ErrorType $type=null) :null {
         $this->type = $type ?: ErrorType::INTERNAL;
         if ($error instanceOf \Throwable){
             $this->error = array(
@@ -54,8 +54,7 @@ abstract class ErrorAbstract implements ErrorInterface {
             );
         }
         $this->onError();
+        return null;
     }
-
-
 
 }

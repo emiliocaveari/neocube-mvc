@@ -8,7 +8,7 @@ class Mysql implements AdapterInterface {
 
     private static array $instance = [];
 
-    static function getConnection($db, $database) {
+    static function getConnection($db, $database) : PDO {
         if (!isset(self::$instance[$database])) {
             $dsn = 'mysql:host=' . $db['host'] . ';dbname=' . $db['dbname'];
             if (isset($db['port'])) $dsn .= ";port={$db['port']}";

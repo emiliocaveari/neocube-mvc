@@ -51,10 +51,6 @@ class Request {
 
 
 
-    //--PUBLIC FUNCTIONS------------------------------------------------------//
-    //------------------------------------------------------------------------//
-
-
     static public function request(): bool {
         if (is_null(static::$_data)) static::readRequestData();
         return (static::$_data) ? true : false;
@@ -101,9 +97,7 @@ class Request {
     }
 
 
-    //--Retorna array GET em formato de url
     static public function getToUrl(array $arr = []): string {
-        //--Mescalndo novos valores ao get
         if (static::isMethod('get')) {
             $data = static::getData();
             $get  = array_merge($data, $arr);
@@ -113,7 +107,6 @@ class Request {
         return '?' . http_build_query($get);
     }
 
-    //--Verifia se a requisição foi realizada via XMLHttpRequest
     static public function isAjax(): bool {
         return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) and $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
             ? true

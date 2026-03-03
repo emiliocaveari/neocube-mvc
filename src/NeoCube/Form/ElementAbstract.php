@@ -37,8 +37,9 @@ abstract class ElementAbstract {
     );
 
 
-    public function __construct($identify) {
-        $this->name($identify);
+    public function __construct(?string $identify = null, ?string $type = null) {
+        if ($identify) $this->name($identify);
+        if (!$this->type and $type) $this->type = $type;
     }
 
     public function name(string|bool|null $val = null): string | static {
@@ -227,6 +228,16 @@ abstract class ElementAbstract {
         } else {
             if ($val) $this->attr['required'] = true;
             else  unset($this->attr['required']);
+            return $this;
+        }
+    }
+
+    public function checked($val = null) {
+        if (is_null($val)) {
+            return isset($this->attr['checked']) ? true : false;
+        } else {
+            if ((bool)$val) $this->attr['checked'] = true;
+            else  unset($this->attr['checked']);
             return $this;
         }
     }

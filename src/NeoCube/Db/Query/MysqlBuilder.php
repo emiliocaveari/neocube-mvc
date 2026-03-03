@@ -70,7 +70,6 @@ class MysqlBuilder implements BuilderInferface {
 
         $sentence = 'INSERT INTO ' . $queryParams->table . ' (' . implode(',', $keys_parameters) . ') VALUES (' . implode(',', $bind_parameters) . ')';
 
-        //--On Duplicate key
         if ($queryParams->onDuplicateKey) {
             $bindKeyValue = [];
             foreach ($queryParams->onDuplicateKey as $key => $value) {

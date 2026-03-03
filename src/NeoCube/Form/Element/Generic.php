@@ -4,8 +4,7 @@ namespace NeoCube\Form\Element;
 
 use NeoCube\Form\ElementAbstract;
 
-class Month extends ElementAbstract {
+class Generic extends ElementAbstract {
 
-    protected string $type = 'month';
-
+    
 }

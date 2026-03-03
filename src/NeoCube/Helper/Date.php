@@ -8,12 +8,12 @@ use DateTime;
 class Date {
 
     static public function dateFormat(string &$date): bool {
-        if (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $date)) { //-- YYYY-MM-DD
+        if (preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $date)) {
             return true;
-        } else if (preg_match('/^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/', $date)) { //-- DD/MM/YYYY
+        } else if (preg_match('/^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/', $date)) {
             $date = implode('-', array_reverse(explode('/', $date)));
             return true;
-        } else if (preg_match('/^[0-9]{2}-[0-9]{2}-[0-9]{4}$/', $date)) { //-- DD-MM-YYYY
+        } else if (preg_match('/^[0-9]{2}-[0-9]{2}-[0-9]{4}$/', $date)) {
             $date = implode('-', array_reverse(explode('-', $date)));
             return true;
         } else {

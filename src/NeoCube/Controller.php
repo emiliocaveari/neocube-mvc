@@ -73,7 +73,7 @@ abstract class Controller {
             $data = $actionData?->data ?? $actionData;
             return new RenderJson($data, $status);
         }
-        //--Retorna a rederização da view por padrão
+        
         return new RenderView($this->view);
     }
 }

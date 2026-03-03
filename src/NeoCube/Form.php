@@ -3,6 +3,8 @@
 namespace NeoCube;
 
 use Closure;
+use NeoCube\Form\Element\Button;
+use NeoCube\Form\Element\Generic;
 use NeoCube\Request;
 use NeoCube\Validate;
 use NeoCube\Form\ElementAbstract;
@@ -16,14 +18,14 @@ class Form {
 
     protected array $error      = [];
 
-    protected array $request    = [];           //--Valores preparados para registrar valores nos elemento]s
-    protected array $elements_values_init = []; //--Valores setados inicialmente
+    protected array $request    = [];
+    protected array $elements_values_init = [];
 
     protected bool $open  = false;
     protected bool $close = false;
 
-    protected string $FormRender  = '';         //--Classe de renderização do formulários
-    protected string $funcRender  = 'render';   //--Função padrão de renderização do formulários
+    protected string $FormRender  = '';
+    protected string $funcRender  = 'render'; 
 
     protected array $mapElements = [];
 
@@ -37,6 +39,18 @@ class Form {
 
     public function getError() {
         return $this->error;
+    }
+
+
+    public function getMapElements(string $type): string {
+        $elementsBase = '\\NeoCube\\Form\\Element\\' . ucfirst(strtolower($type));
+        $class = $this->mapElements[$type]
+            ?? (class_exists($elementsBase) ? $elementsBase : null)
+            ?? (in_array($type, ['submit', 'reset', 'button']) ? Button::class : null)
+            ?? $this->mapElements['generic']
+            ?? Generic::class;
+
+        return $class;
     }
 
 
@@ -160,16 +174,12 @@ class Form {
         }
     }
 
-    public function addElement(ElementAbstract|string $type, string $identify = '', null|string $pos = ''): ElementAbstract | false {
+    public function addElement(ElementAbstract|string $type, string $identify = '', null|string $pos = ''): ElementAbstract {
         if ($type instanceof ElementAbstract) {
             $element = $type;
         } else {
-            $class_name = $this->mapElements[$type] ?? '\\NeoCube\\Form\\Element\\' . ucfirst(strtolower($type));
-            if (class_exists($class_name)) {
-                $element = new $class_name($identify);
-            } else {
-                return false;
-            }
+            $class_name = $this->getMapElements($type);
+            $element = new $class_name($identify, $type);
         }
         $this->pushElement($element, $identify, $pos);
         return $element;
@@ -256,29 +266,23 @@ class Form {
 
     public function writeElement(array|string $identify, string $pos = ''): string {
 
-        //--Verifica se existe constante definida para renderizar o formulário
         if (empty($this->FormRender))
             $this->FormRender = Env::getValue('CLASS_FORM_RENDER') ?: FormRender::class;
 
-        //--Retorno renderizado dos elementos
         $return = '';
         $elementsRender = array();
 
-        //--Se passou uma instancia do elemento do form
         if ($identify instanceof ElementAbstract) {
             $elementsRender[] = $identify;
         }
-        //--Passou string de identificação de um elemento do form
         else {
 
             if (is_string($identify) and strpos($identify, ',') !== false) {
                 $identify = explode(',', $identify);
             }
-            //--Se passar um array de identificadores
             if (is_array($identify)) {
                 foreach ($identify as $id) {
                     if (isset($this->elements[$id])) {
-                        //--se for array de elementos
                         if (is_array($this->elements[$id])) {
                             foreach ($this->elements[$id] as $elem)
                                 $elementsRender[] = $elem;
@@ -289,7 +293,6 @@ class Form {
                     }
                 }
             } else if (isset($this->elements[$identify])) {
-                //--se for array de elementos
                 if (is_array($this->elements[$identify])) {
                     if (empty($pos)) {
                         foreach ($this->elements[$identify] as $elem)
@@ -306,7 +309,6 @@ class Form {
             }
         }
 
-        //--Renderiza elemento
         if ($elementsRender) {
             $funcRender = $this->funcRender;
             $formRender = $this->FormRender;
@@ -328,15 +330,15 @@ class Form {
                 if (isset($this->elements[$id])) {
                     if (is_array($this->elements[$id])) {
                         foreach ($this->elements[$id] as $elem)
-                            $format($elem,$id);
-                    } else $format($this->elements[$id],$id);
+                            $format($elem, $id);
+                    } else $format($this->elements[$id], $id);
                 }
             }
         } else if (isset($this->elements[$identify])) {
             if (is_array($this->elements[$identify])) {
                 foreach ($this->elements[$identify] as $elem)
-                    $format($elem,$identify);
-            } else $format($this->elements[$identify],$identify);
+                    $format($elem, $identify);
+            } else $format($this->elements[$identify], $identify);
         }
         return $this;
     }
@@ -385,11 +387,9 @@ class Form {
 
 
     public function writeForm($funcRender = null): string {
-        //--seta função de renderização do form
         if ($funcRender !== null and $funcRender !== false)
             $this->funcRender($funcRender);
 
-        //--Inicia renderização
         $return = $this->open();
 
         $keys = array_keys($this->elements);
@@ -405,7 +405,7 @@ class Form {
     public function request(bool $reload = false): bool {
         if (
             Request::isMethod($this->method()) and
-            (!$this->request or $reload) 
+            (!$this->request or $reload)
         ) {
             $names   = $this->getElementsName();
             $request = Request::getData($reload);
@@ -442,10 +442,8 @@ class Form {
 
     public function clearValues(bool $init = true, array $only_identify = []): static {
 
-        //--Verifica se foram registrados valores
         if (is_null($this->elements_values_init)) return $this;
 
-        //--Registrando valores nos elementos
         foreach ($this->elements as $identify => $element) {
             if (count($only_identify) == 0 or in_array($identify, $only_identify)) {
                 if (is_array($element)) {
@@ -472,7 +470,6 @@ class Form {
 
 
     public function registerValues(array $values = []): static {
-        //--Validando valores
         if (count($values)) {
             $values = $this->prepareValuesForRegister($values);
         } else if (count($this->request)) {
@@ -480,15 +477,11 @@ class Form {
         } else {
             return $this;
         }
-        //--Registrando valores nos elementos
         foreach ($this->elements as $identify => $element) {
             if (is_array($element)) {
                 foreach ($element as $key => $elem) {
-                    //--Seta valor inicial
                     $this->elements_values_init[$identify][$key] = $elem->value();
-                    //--atributo name do elemento
                     $elemName = $elem->name();
-                    //--Verifica se foi usado para receber dados de array sequencial
                     if (substr($elemName, strlen($elemName) - 2) == '[]') {
                         $elemName = substr($elemName, 0, strlen($elemName) - 2);
                         $arrValues = null;
@@ -506,9 +499,7 @@ class Form {
                 }
             } else {
                 $this->elements_values_init[$identify] = $element->value();
-                //--atributo name do elemento
                 $elemName = $element->name();
-                //--Verifica se foi usado para receber dados de array sequencial
                 if (substr($elemName, strlen($elemName) - 2) == '[]') {
                     $elemName = substr($elemName, 0, strlen($elemName) - 2);
                     $arrValues = array();
@@ -530,11 +521,9 @@ class Form {
 
 
     public function registerValidateErrors(array $errors): static {
-        //--Registrando erros nos elementos
         foreach ($this->elements as $identify => $element) {
             if (is_array($element)) {
                 foreach ($element as $key => $elem) {
-                    //--atributo name do elemento
                     $name = $elem->name(true);
                     if (isset($errors[$name])) {
                         $elem->attr(['error' => $errors[$name]]);

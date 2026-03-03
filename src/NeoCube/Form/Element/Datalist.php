@@ -6,7 +6,7 @@ use NeoCube\Form\ElementAbstract;
 
 class Datalist extends ElementAbstract {
 
-    protected string $type = 'text';
+    protected string $type = 'datalist';
 
     private $options = array();
     private $attrDatalist = [];
