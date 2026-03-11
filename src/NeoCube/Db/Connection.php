@@ -15,6 +15,7 @@ use PDOException;
 class Connection {
 
     private static array $connections = [];
+    private static string $database = 'main';
 
     static private function getConnections(): ?array {
         if (self::$connections) return self::$connections;
@@ -31,11 +32,12 @@ class Connection {
         $connections = self::getConnections();
 
         if ($database) {
+            self::$database = $database;
             if (!isset($connections[$database]['adapter']))
                 return Application::ErrorReporting()->dispatch("DATABASE \"$database\" CONNECTIONS not defined!", ErrorType::CONNECTION);
             $conn = $connections[$database];
         } else {
-            $database = 'main';
+            $database = self::$database;
             $conn = reset($connections);
         }
 

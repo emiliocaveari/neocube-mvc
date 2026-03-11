@@ -71,7 +71,7 @@ final class Migrate {
                 if ($instance->up() !== false) {
                     $this->_toUp($name);
                 } else {
-                    return 'ERROR';
+                    return "ERROR $name up!";
                 }
             } catch (\Exception $e) {
                 throw $e;
@@ -99,7 +99,7 @@ final class Migrate {
                 if ($instance->down() !== false) {
                     $this->_toDown($name);
                 } else {
-                    return 'ERROR';
+                    return "ERROR $name down!";
                 }
             } catch (\Exception $e) {
                 throw $e;
