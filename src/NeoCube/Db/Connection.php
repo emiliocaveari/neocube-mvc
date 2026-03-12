@@ -2,6 +2,7 @@
 
 namespace NeoCube\Db;
 
+use Exception;
 use NeoCube\Application;
 use NeoCube\Error\ErrorType;
 use NeoCube\Db\Adapter\Mysql;
@@ -23,25 +24,24 @@ class Connection {
             self::$connections = File::readJson($json);
             return self::$connections;
         }
-        return Application::ErrorReporting()->dispatch('DATABASE CONNECTIONS not defined!', ErrorType::CONNECTION);
+        throw new Exception('DATABASE CONNECTIONS not defined!', 1);
     }
 
-
     static public function factory(?string $database = null): ?PDO {
-
-        $connections = self::getConnections();
-
-        if ($database) {
-            self::$database = $database;
-            if (!isset($connections[$database]['adapter']))
-                return Application::ErrorReporting()->dispatch("DATABASE \"$database\" CONNECTIONS not defined!", ErrorType::CONNECTION);
-            $conn = $connections[$database];
-        } else {
-            $database = self::$database;
-            $conn = reset($connections);
-        }
-
         try {
+            $connections = self::getConnections();
+            if ($database) {
+                if (!isset($connections[$database]['adapter']))
+                    throw new Exception("DATABASE \"$database\" CONNECTIONS not defined!", 1);
+                self::$database = $database;
+                $conn = $connections[$database];
+            } else if (isset($connections[self::$database])) {
+                $database = self::$database;
+                $conn = $connections[$database];
+            } else {
+                $database = array_key_first($connections);
+                $conn = reset($connections);
+            }
             return match (strtolower($conn['adapter'])) {
                 "mysql" => Mysql::getConnection($conn, $database),
                 "postgre" => Postgre::getConnection($conn, $database),
@@ -49,6 +49,8 @@ class Connection {
             };
         } catch (PDOException $e) {
             return Application::ErrorReporting()->dispatch($e, ErrorType::CONNECTION);
+        } catch (Exception $e) {
+            return Application::ErrorReporting()->dispatch($e, ErrorType::INTERNAL);
         }
     }
 }
