@@ -58,15 +58,18 @@ class Request {
 
     static public function getData(bool|string|array $data = false, mixed $defaultEmpty = null): mixed {
         if (is_null(static::$_data) or $data === true) static::readRequestData();
-        if ($data !== true and $data !== false) {
-            if (is_array($data)) {
-                $arrData = [];
-                foreach ($data as $k) {
-                    $arrData[$k] = isset(static::$_data[$k]) ? static::$_data[$k] : $defaultEmpty;
-                }
-                return $arrData;
-            } else return isset(static::$_data[$data]) ? static::$_data[$data] : $defaultEmpty;
-        } else return static::$_data;
+
+        if (is_array($data)) {
+            $arrData = [];
+            foreach ($data as $k)
+                $arrData[$k] = static::$_data[$k] ?? $defaultEmpty;
+            return $arrData;
+        }
+
+        if (is_string($data))
+            return static::$_data[$data] ?? $defaultEmpty;
+
+        return static::$_data;
     }
 
     static public function getHeader(string $header = '', bool $reload = false): mixed {

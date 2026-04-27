@@ -41,7 +41,7 @@ class Router {
     }
 
 
-    static public function createLink(null|string $str_router = null, array|bool $get_params = false, bool $merge_params = true) {
+    static public function createLink(null|string $str_router = null, ?array $params = null) {
         $url = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . static::$publicDir;
 
         if ($str_router === null)
@@ -57,16 +57,8 @@ class Router {
 
         if (substr($url, -1, 1) == '/') $url = substr($url, 0, -1);
 
-        if ($get_params) {
-            if (!is_array($get_params)) $get_params = [];
-            if ($merge_params) {
-                if (Request::isMethod('get')) {
-                    $data       = Request::getData();
-                    $get_params = array_merge($data, $get_params);
-                }
-            }
-            if ($get_params) $url .= '?' . http_build_query($get_params);
-        }
+        if ($params)
+            $url .= '?' . http_build_query($params);
 
         return $url;
     }

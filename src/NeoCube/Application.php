@@ -11,18 +11,17 @@ final class Application{
     private function __construct(){}
 
     //--AMBIENTE
-    const ENVIRONMENT_DEV = 'DEV';
-    const ENVIRONMENT_PRODUCTION = 'PRODUCTION';
+    const string ENVIRONMENT_DEV = 'DEV';
+    const string ENVIRONMENT_PRODUCTION = 'PRODUCTION';
 
     static private ?Router $router = null;
     static private ?ErrorAbstract $_Error = null;
 
-    static public function setEnvironment($environment){
+    static public function setEnvironment(string $environment){
         Env::setValue('ENVIRONMENT',$environment);
     }
-    static public function isEnvironment($environment){
-        $env = Env::getValue('ENVIRONMENT');
-        return (Env::getValue('ENVIRONMENT') === $environment);
+    static public function isEnvironment(string $environment){
+        return (Env::get('ENVIRONMENT',self::ENVIRONMENT_PRODUCTION) === $environment);
     }
 
     static public function setRouter(Router $Router){
