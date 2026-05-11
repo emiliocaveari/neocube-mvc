@@ -53,7 +53,8 @@ class Strings {
 
     static public function toCamelCase(string $string, string|array $separator = '-'): string {
         $camelCase = str_replace(' ', '', ucwords(str_replace($separator, ' ', strtolower($string))));
-        $camelCase[0] = strtolower($camelCase[0]);
+        if (isset($camelCase[0]))
+            $camelCase[0] = strtolower($camelCase[0]);
         return $camelCase;
     }
 

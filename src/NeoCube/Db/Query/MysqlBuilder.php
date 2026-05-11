@@ -13,13 +13,13 @@ class MysqlBuilder implements BuilderInferface {
         $sentence  = 'SELECT ';
         $sentence .= (count($queryParams->cols)) ? implode(',', $queryParams->cols) : '*';
         $sentence .= ' FROM ' . $queryParams->table;
-        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+        if ($queryParams->alias) $sentence .= ' ' . $queryParams->alias;
 
 
         if (count($queryParams->join))
             foreach ($queryParams->join as $join) {
                 $table = $join['table'];
-                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                if (!empty($join['alias'])) $table .= ' ' . $join['alias'];
                 $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
             }
 
@@ -166,12 +166,12 @@ class MysqlBuilder implements BuilderInferface {
         }
 
         $sentence = 'UPDATE ' . $queryParams->table;
-        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+        if ($queryParams->alias) $sentence .= ' ' . $queryParams->alias;
 
         if (count($queryParams->join)) {
             foreach ($queryParams->join as $join) {
                 $table = $join['table'];
-                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                if (!empty($join['alias'])) $table .= ' ' . $join['alias'];
                 $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
             }
         }
@@ -184,8 +184,9 @@ class MysqlBuilder implements BuilderInferface {
 
     public function delete(Query $query): string {
         $queryParams = $query->getParams();
-        $sentence = "DELETE FROM " . $queryParams->table;
-        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+        $sentence = ($queryParams->alias)
+            ? "DELETE {$queryParams->alias} FROM {$queryParams->table} {$queryParams->alias}"
+            : "DELETE FROM {$queryParams->table}";
         if (count($queryParams->join)) {
             foreach ($queryParams->join as $join) {
                 $table = $join['table'];
@@ -201,11 +202,11 @@ class MysqlBuilder implements BuilderInferface {
     public function lineNumbers(Query $query): string {
         $queryParams = $query->getParams();
         $sentence  = "SELECT COUNT(0) AS pages FROM {$queryParams->table}";
-        if ($queryParams->alias) $sentence .= ' AS ' . $queryParams->alias;
+        if ($queryParams->alias) $sentence .= ' ' . $queryParams->alias;
         if (count($queryParams->join)) {
             foreach ($queryParams->join as $join) {
                 $table = $join['table'];
-                if (!empty($join['alias'])) $table .= ' AS ' . $join['alias'];
+                if (!empty($join['alias'])) $table .= ' ' . $join['alias'];
                 $sentence .= ' ' . strtoupper($join['type']) . ' JOIN ' . $table . ' ON ' . implode(' AND ', $join['on']);
             }
         }

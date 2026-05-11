@@ -147,7 +147,7 @@ class Router {
         self::$url = [
             self::MODE_URL_REQUIRED => $urlRequired,
             self::MODE_URL_BASE     => $url ?: '',
-            self::MODE_URL_EXPLODE  => $url ? explode(' ', trim(str_replace('/', ' ', $url))) : []
+            self::MODE_URL_EXPLODE  => $url ? array_filter(explode('/', trim("$url"))) : []
         ];
     }
 

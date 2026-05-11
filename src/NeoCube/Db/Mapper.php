@@ -312,7 +312,7 @@ class Mapper {
         }
         if (isset($id)) {
             $this->clear()->setBindValues([':PK_MAPPER_ID' => $id]);
-            $this->Query->setWhere("$this->_table.$this->_pk=:PK_MAPPER_ID");
+            $this->Query->setWhere("$this->_alias.$this->_pk=:PK_MAPPER_ID");
             if (!$this->update($data)) $id = false;
             $this->saveInfo = 'UPDATE';
         } else {
@@ -369,7 +369,7 @@ class Mapper {
         if (empty($this->sentence)) {
             if (!empty($id)) {
                 if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
-                $this->Query->setWhere($this->_table . '.' . $this->_pk . '=:findprimarykey');
+                $this->Query->setWhere($this->_alias . '.' . $this->_pk . '=:findprimarykey');
                 $this->setBindValues([':findprimarykey' => $id]);
             }
             $this->sentence  = $this->Builder->select($this->Query);
@@ -407,7 +407,7 @@ class Mapper {
     public function delete(string $pk_value = ''): bool {
         if ($pk_value) {
             if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
-            $this->Query->setWhere($this->_table . '.' . $this->_pk . '=:deleteprimarykey');
+            $this->Query->setWhere($this->_alias . '.' . $this->_pk . '=:deleteprimarykey');
             $this->setBindValues([':deleteprimarykey' => $pk_value]);
         }
         $this->sentence  = $this->Builder->delete($this->Query);
@@ -444,7 +444,7 @@ class Mapper {
 
         if (empty($key)){
             if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
-            $key = "{$this->_table}.{$this->_pk}";
+            $key = "{$this->_alias}.{$this->_pk}";
         }
 
         $cols[] = $key;
