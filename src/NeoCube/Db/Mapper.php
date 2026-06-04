@@ -17,10 +17,10 @@ class Mapper {
     protected string  $_table = '';
     protected string  $_alias = '';
     protected string  $_pk    = 'id';
-    
+
     protected string $error     = '';
     protected string $saveInfo  = '';
-    
+
     protected ?string $_connection = null;
     protected ?PDO $Db;
 
@@ -322,14 +322,14 @@ class Mapper {
         return $id;
     }
 
-    public function paginate(?int $current = 1, int $numpages = 10, View|null &$view = null): static {
-        $this->paginate = ['current' => ($current ?: 1), 'numpages' => $numpages, 'pages' => 0, 'view' => $view];
+    public function paginate(?int $current = 1, int $perpage = 10, View|null &$view = null): static {
+        $this->paginate = ['current' => ($current ?: 1), 'perpage' => $perpage, 'pages' => 0, 'total' => 0, 'view' => $view];
         if (is_numeric($current)) {
-            $p = ($current - 1) * $numpages;
+            $p = ($current - 1) * $perpage;
             if ($p < 0) $p = 0;
-            $this->setLimit($numpages, $p);
+            $this->setLimit($perpage, $p);
         } else {
-            $this->setLimit($numpages);
+            $this->setLimit($perpage);
         }
         return $this;
     }
@@ -339,9 +339,10 @@ class Mapper {
             $this->sentence  = $this->Builder->select($this->Query);
 
         if (!is_null($this->paginate)) {
-            $this->paginate['pages'] = ceil($this->lineNumbers() / $this->paginate['numpages']);
+            $this->paginate['total'] = $this->lineNumbers();
+            $this->paginate['pages'] = ceil($this->paginate['total'] / $this->paginate['perpage']);
             if ($this->paginate['view'] instanceof View)
-                $this->paginate['view']->setData(array_intersect_key($this->paginate, array_flip(['numpages', 'pages', 'current'])));
+                $this->paginate['view']->setData(array_intersect_key($this->paginate, array_flip(['current', 'perpage', 'pages', 'total'])));
         }
 
         $stm = $this->executeSentence();
@@ -442,7 +443,7 @@ class Mapper {
         if ($params['empty'] !== false)
             $select = array_merge(['empty' => ($params['empty'] === true ? '' : $params['empty'])], $select);
 
-        if (empty($key)){
+        if (empty($key)) {
             if (!$this->_pk) throw new \Exception("Mapper Primary Key is empty!", 1);
             $key = "{$this->_alias}.{$this->_pk}";
         }

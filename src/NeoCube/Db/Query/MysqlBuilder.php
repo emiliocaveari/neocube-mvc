@@ -186,7 +186,7 @@ class MysqlBuilder implements BuilderInferface {
         $queryParams = $query->getParams();
         $sentence = ($queryParams->alias)
             ? "DELETE {$queryParams->alias} FROM {$queryParams->table} {$queryParams->alias}"
-            : "DELETE FROM {$queryParams->table}";
+            : "DELETE {$queryParams->table} FROM {$queryParams->table}";
         if (count($queryParams->join)) {
             foreach ($queryParams->join as $join) {
                 $table = $join['table'];
