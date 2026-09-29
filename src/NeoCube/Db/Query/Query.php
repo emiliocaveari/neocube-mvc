@@ -18,12 +18,14 @@ class Query {
         $this->params->order          = array();
         $this->params->join           = array();
         $this->params->forUpdate      = false;
-        $this->params->onDuplicateKey = false;
+        $this->params->duplicateKey   = false;
+        $this->params->conflictColumns = array();
         $this->params->limit          = null;
         $this->params->offset         = null;
         $this->params->group          = null;
         $this->params->having         = null;
         $this->params->alias          = null;
+        $this->params->returning      = null;
     }
 
     public function getParams(): stdClass {
@@ -54,6 +56,8 @@ class Query {
                 return $this->params->join;
             case 'alias':
                 return $this->params->alias;
+            case 'returning':
+                return $this->params->returning;
             default:
                 return null;
         }
@@ -116,6 +120,13 @@ class Query {
         return $this;
     }
 
+    public function setReturning(string|array $cols): static {
+        if (!is_array($cols))
+            $cols = strpos($cols, ',') !== false ? explode(',', $cols) : [$cols];
+        $this->params->returning = array_map('trim', $cols);
+        return $this;
+    }
+
     public function setForUpdate(bool $bool): static {
         $this->params->forUpdate = $bool;
         return $this;
@@ -131,17 +142,18 @@ class Query {
         return $this;
     }
 
-    public function onDuplicateKey(bool|array $data): static {
+    public function setDuplicateKey(bool|array $data, array $conflictColumns = []): static {
         if (!is_array($data)) {
-            $this->params->onDuplicateKey = $data;
+            $this->params->duplicateKey = $data;
         } else {
-            $this->params->onDuplicateKey = [];
+            $this->params->duplicateKey = [];
             foreach ($data as $key => $val) {
                 if ($val === 0 or $val === '0' or !empty($val) or is_null($val)) {
-                    $this->params->onDuplicateKey[$key] = $val;
+                    $this->params->duplicateKey[$key] = $val;
                 }
             }
         }
+        $this->params->conflictColumns = $conflictColumns;
         return $this;
     }
 
@@ -155,7 +167,7 @@ class Query {
     public function clear(array $clear = []): static {
 
         if (empty($clear))
-            $clear = ['data', 'cols', 'where', 'order', 'join', 'forupdate', 'onduplicatekey', 'limit', 'group'];
+            $clear = ['data', 'cols', 'where', 'order', 'join', 'forupdate', 'duplicateKey', 'limit', 'group', 'returning'];
 
         if (in_array('data', $clear))           $this->params->data = array();
         if (in_array('cols', $clear))           $this->params->cols = array();
@@ -163,7 +175,11 @@ class Query {
         if (in_array('order', $clear))          $this->params->order = array();
         if (in_array('join', $clear))           $this->params->join = array();
         if (in_array('forupdate', $clear))      $this->params->forUpdate = false;
-        if (in_array('onduplicatekey', $clear)) $this->params->onDuplicateKey = false;
+        if (in_array('duplicateKey', $clear)) {
+            $this->params->duplicateKey = false;
+            $this->params->conflictColumns = array();
+        }
+        if (in_array('returning', $clear))      $this->params->returning = null;
 
         if (in_array('limit', $clear)) {
             $this->params->limit  = null;
@@ -177,7 +193,7 @@ class Query {
         return $this;
     }
 
-    public function isSetParam(string $type = ''): bool {
+    public function hasParam(string $type = ''): bool {
         switch (strtolower($type)) {
             case 'data':
                 return !!count($this->params->data);
@@ -199,6 +215,8 @@ class Query {
                 return !is_null($this->params->having);
             case 'join':
                 return !!count($this->params->join);
+            case 'returning':
+                return !empty($this->params->returning);
             default:
                 return false;
         }

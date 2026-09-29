@@ -262,7 +262,7 @@ class View {
                 $this->_renderized = ob_get_contents();
                 ob_end_clean();
             } else {
-                exit('Layout "' . $this->_layout . '" nao encontrado em ' . $this->_path['layout']);
+                throw new \RuntimeException('Layout "' . $this->_layout . '" nao encontrado em ' . $this->_path['layout']);
             }
         }
     }

@@ -2,6 +2,8 @@
 
 namespace NeoCube;
 
+use NeoCube\Http\ContextStorage;
+
 
 class Response {
 
@@ -32,16 +34,20 @@ class Response {
 
     final public function execute() {
         if ($this->clean and ob_get_length()) ob_clean();
+
+        $ctx = ContextStorage::current();
         foreach ($this->header as $header)
-            header($header);
-        header('status: ' . $this->code);
-        http_response_code($this->code);
+            $ctx->addResponseHeader($header);
+        $ctx->setStatus($this->code);
+
         if ($this->html)
-            echo $this->html;
+            $ctx->setBody($this->html);
         else if ($this->body)
-            echo json_encode($this->body);
+            $ctx->setBody(json_encode($this->body));
         else if ($this->file)
-            readfile($this->file);
+            //--Lido inteiro para a memória (em vez de readfile()) para funcionar
+            //--igual sob FPM (saída via header()/echo) e Swoole ($response->end()).
+            $ctx->setBody(file_get_contents($this->file) ?: '');
     }
 
     static public function getContentType(string $filename): string {

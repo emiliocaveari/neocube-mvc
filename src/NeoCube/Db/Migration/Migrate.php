@@ -31,9 +31,6 @@ final class Migrate {
         $this->_db = $config['db'] ?? Connection::factory();
         $this->migrationsPath = $config['migrationsPath'] ?? './migrations';
 
-        if ($this->_db->getAttribute(\PDO::ATTR_DRIVER_NAME) !== 'mysql')
-            throw new \Exception('Only support MySQL driver.');
-
         $this->_init();
     }
 
@@ -148,17 +145,17 @@ final class Migrate {
 
     private function _init() {
         $this->_db->exec("CREATE TABLE IF NOT EXISTS {$this->migrationTable} (
-          `name` varchar(180) NOT NULL,
-          `apply_time` int(11) DEFAULT NULL,
-          PRIMARY KEY (`name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+          name VARCHAR(180) NOT NULL,
+          apply_time INTEGER DEFAULT NULL,
+          PRIMARY KEY (name)
+        )");
 
         $this->_toUp(self::BASE_MIGRATION);
     }
 
     private function _toUp($name) {
         try {
-            $stm = $this->_db->prepare("INSERT INTO {$this->migrationTable} set `name` = ?, `apply_time` = ?");
+            $stm = $this->_db->prepare("INSERT INTO {$this->migrationTable} (name, apply_time) VALUES (?, ?)");
             $stm->execute([$name, time()]);
         } catch (\PDOException $e) {
             return false;
@@ -169,7 +166,7 @@ final class Migrate {
 
     private function _toDown($name) {
         try {
-            $stm = $this->_db->prepare("DELETE FROM {$this->migrationTable} WHERE `name` = ?");
+            $stm = $this->_db->prepare("DELETE FROM {$this->migrationTable} WHERE name = ?");
             $stm->execute([$name]);
         } catch (\PDOException $e) {
             return false;
@@ -179,7 +176,7 @@ final class Migrate {
     }
 
     private function _getHistory() {
-        $stm = $this->_db->prepare("SELECT * FROM {$this->migrationTable} WHERE `name` <> :base ORDER BY `apply_time` ASC");
+        $stm = $this->_db->prepare("SELECT * FROM {$this->migrationTable} WHERE name <> :base ORDER BY apply_time ASC");
         $stm->bindValue(':base', self::BASE_MIGRATION);
         $stm->execute();
         return $stm->fetchAll();

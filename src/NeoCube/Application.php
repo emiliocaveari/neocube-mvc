@@ -2,9 +2,11 @@
 
 namespace NeoCube;
 
+use NeoCube\Application\ApplicationContextStorage;
 use NeoCube\Error\ErrorAbstract;
 use NeoCube\Error\ErrorType;
 use NeoCube\Error;
+use NeoCube\Http\ContextStorage;
 
 final class Application{
 
@@ -14,9 +16,6 @@ final class Application{
     const string ENVIRONMENT_DEV = 'DEV';
     const string ENVIRONMENT_PRODUCTION = 'PRODUCTION';
 
-    static private ?Router $router = null;
-    static private ?ErrorAbstract $_Error = null;
-
     static public function setEnvironment(string $environment){
         Env::setValue('ENVIRONMENT',$environment);
     }
@@ -25,25 +24,33 @@ final class Application{
     }
 
     static public function setRouter(Router $Router){
-        static::$router = $Router;
+        ApplicationContextStorage::current()->router = $Router;
     }
-    static public function Router(){
-        return static::$router;
+    static public function Router(): ?Router {
+        return ApplicationContextStorage::current()->router;
     }
-    
+
     static public function setErrorReporting(ErrorAbstract $Error){
-        static::$_Error = $Error;
+        ApplicationContextStorage::current()->error = $Error;
     }
     static public function ErrorReporting() : ErrorAbstract{
-        if (!static::$_Error) static::$_Error = new Error();
-        return static::$_Error;
+        $ctx = ApplicationContextStorage::current();
+        if (!$ctx->error) $ctx->error = new Error();
+        return $ctx->error;
     }
     static public function startErrorReporting() : void {
 
         set_error_handler(array('NeoCube\Error\Controller','handler'));
-        register_shutdown_function(array('NeoCube\Error\Controller','shutdown'));
 
-        if (isset($_SERVER['REQUEST_METHOD']) and $_SERVER['REQUEST_METHOD'] == 'POST' and isset($_SERVER['CONTENT_LENGTH']) and $_SERVER['CONTENT_LENGTH'] > 0 ) {
+        //--Sob Swoole o processo é de vida longa: register_shutdown_function só dispara
+        //--quando o WORKER morre, não a cada requisição, então é registrado uma única
+        //--vez no boot do worker (ver server.php) em vez de aqui.
+        if (!defined('NEOCUBE_SWOOLE')) {
+            register_shutdown_function(array('NeoCube\Error\Controller','shutdown'));
+        }
+
+        $server = ContextStorage::current()->server;
+        if (($server['REQUEST_METHOD'] ?? null) == 'POST' and ($server['CONTENT_LENGTH'] ?? 0) > 0 ) {
             $displayMaxSize = ini_get('post_max_size');
             $size = null;
             if (!is_numeric($displayMaxSize)){
@@ -55,10 +62,10 @@ final class Application{
                     case 'K': $displayMaxSize = $displayMaxSize * 1024;
                 }
             }
-            if (  $_SERVER['CONTENT_LENGTH'] > $displayMaxSize ){
+            if (  $server['CONTENT_LENGTH'] > $displayMaxSize ){
                 $error = array(
                     'code'    => 'POST_MAX_SIZE',
-                    'message' => "Posted data is too large. {$_SERVER['CONTENT_LENGTH']}  bytes exceeds the maximum size of {$displayMaxSize} bytes.",
+                    'message' => "Posted data is too large. {$server['CONTENT_LENGTH']}  bytes exceeds the maximum size of {$displayMaxSize} bytes.",
                     'file'    => 'Undefined',
                     'line'    => 0,
                     'context' => null
@@ -71,10 +78,11 @@ final class Application{
     static public function startModules(?Router $Router = null){
         static::startErrorReporting();
 
-        static::$router = $Router ?? new Router();
+        $router = $Router ?? new Router();
+        static::setRouter($router);
 
-        static::$router->routing();
-        static::$router->writeOut();
+        $router->routing();
+        $router->writeOut();
     }
 
 }

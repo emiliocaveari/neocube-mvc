@@ -2,18 +2,19 @@
 
 namespace NeoCube;
 
+use NeoCube\Application\ApplicationContext;
+use NeoCube\Application\ApplicationContextStorage;
+use NeoCube\Http\ContextStorage;
 use NeoCube\Validate;
 
 class Request {
 
-    static protected $_data    = null;
-    static protected $_method  = null;
-    static protected $_headers = null;
-
-    static private function get_input_values(): ?array {
-        $values = file_get_contents("php://input") ?: array();
+    static private function get_input_values(): array|string|null {
+        $ctx = ContextStorage::current();
+        $values = $ctx->rawBody ?: array();
         if ($values) {
-            if (isset($_SERVER['CONTENT_TYPE']) and $_SERVER['CONTENT_TYPE'] == 'application/json') {
+            $contentType = $ctx->getHeader('Content-Type') ?: ($ctx->server['CONTENT_TYPE'] ?? '');
+            if (stripos((string) $contentType, 'application/json') !== false) {
                 $values = json_decode($values, true);
             }
         }
@@ -22,71 +23,67 @@ class Request {
 
 
     static protected function readRequestData(): void {
-        static::$_method  = strtoupper($_SERVER['REQUEST_METHOD']);
-        switch (static::$_method) {
-            case 'POST':
-                if (!$_POST) $_POST = static::get_input_values();
-                static::$_data = $_POST;
-                break;
-            case 'GET':
-                static::$_data = $_GET;
-                break;
-            case 'DELETE':
-            case 'PUT':
-                static::$_data = static::get_input_values();
-                break;
+        $ctx = ContextStorage::current();
+        $ctx->requestMethod = strtoupper($ctx->method);
+
+        $data = match ($ctx->requestMethod) {
+            'POST'         => $ctx->post ?: static::get_input_values(),
+            'GET'          => $ctx->get,
+            'DELETE', 'PUT' => static::get_input_values(),
+            default        => [],
+        };
+        if (!is_array($data)) $data = [];
+
+        foreach ($ctx->files as $key => $file) {
+            $data[$key] = $file;
         }
 
-        if (isset($_FILES)) {
-            foreach ($_FILES as $key => $file) {
-                static::$_data[$key] = $file;
-            }
+        if (isset($data['_method'])) {
+            $ctx->requestMethod = strtoupper(trim($data['_method']));
+            unset($data['_method']);
         }
 
-        if (isset(static::$_data['_method'])) {
-            static::$_method = trim(static::$_data['_method']);
-            unset(static::$_data['_method']);
-        }
+        $ctx->requestData = $data;
+        $ctx->requestDataRead = true;
     }
 
 
 
     static public function request(): bool {
-        if (is_null(static::$_data)) static::readRequestData();
-        return (static::$_data) ? true : false;
+        $ctx = ContextStorage::current();
+        if (!$ctx->requestDataRead) static::readRequestData();
+        return (bool) $ctx->requestData;
     }
 
     static public function getData(bool|string|array $data = false, mixed $defaultEmpty = null): mixed {
-        if (is_null(static::$_data) or $data === true) static::readRequestData();
+        $ctx = ContextStorage::current();
+        if (!$ctx->requestDataRead or $data === true) static::readRequestData();
 
         if (is_array($data)) {
             $arrData = [];
             foreach ($data as $k)
-                $arrData[$k] = static::$_data[$k] ?? $defaultEmpty;
+                $arrData[$k] = $ctx->requestData[$k] ?? $defaultEmpty;
             return $arrData;
         }
 
         if (is_string($data))
-            return static::$_data[$data] ?? $defaultEmpty;
+            return $ctx->requestData[$data] ?? $defaultEmpty;
 
-        return static::$_data;
+        return $ctx->requestData;
     }
 
     static public function getHeader(string $header = '', bool $reload = false): mixed {
-        if (is_null(static::$_headers) or $reload)
-            if (function_exists('getallheaders')) static::$_headers = getallheaders();
-        return empty($header)
-            ? static::$_headers
-            : (isset(static::$_headers[$header]) ? static::$_headers[$header] : false);
+        $ctx = ContextStorage::current();
+        return empty($header) ? $ctx->headers : $ctx->getHeader($header);
     }
 
     static public function getMethod(): string {
-        if (is_null(static::$_data)) static::readRequestData();
-        return static::$_method;
+        $ctx = ContextStorage::current();
+        if (!$ctx->requestDataRead) static::readRequestData();
+        return $ctx->requestMethod;
     }
     static public function isMethod($method): bool {
-        if (is_null(static::$_data)) static::readRequestData();
-        return (strtoupper(static::$_method) === strtoupper($method));
+        return (strtoupper(static::getMethod()) === strtoupper($method));
     }
 
     static public function validateData(array $arguments, $data = null): bool {
@@ -111,40 +108,61 @@ class Request {
     }
 
     static public function isAjax(): bool {
-        return (isset($_SERVER['HTTP_X_REQUESTED_WITH']) and $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
-            ? true
-            : false;
+        $header = ContextStorage::current()->getHeader('X-Requested-With');
+        return ($header !== false and strtolower($header) === 'xmlhttprequest');
     }
 
 
+    //--Executa um controller/action internamente (ex.: Select2Ajax), sem
+    //--precisar de uma nova requisição HTTP. Roda num RequestContext clonado
+    //--do atual — herda cookies/sessão (mesmo usuário autenticado), mas isola
+    //--router, resposta em construção e erros de validação, para não vazar
+    //--nada da sub-chamada para a requisição real.
     static public function httpController(string $url, ?array $data = null, ?string $method = null, ?array $headers = null) {
-        $restore = [];
+        $current = ContextStorage::current();
+        $routerClass = get_class(Application::Router());
 
         $query = parse_url($url)['query'] ?? null;
-        if ($query) {
-            parse_str($query, $params);
-            $data = array_merge(($data ?? []), $params);
-        }
+        $queryParams = [];
+        if ($query) parse_str($query, $queryParams);
 
-        if ($data) {
-            $restore['data'] = static::$_data;
-            static::$_data = $data;
-        }
+        $subCtx = clone $current;
+        $subCtx->responseStatus    = 200;
+        $subCtx->responseHeaders   = [];
+        $subCtx->responseCookies   = [];
+        $subCtx->responseBody      = '';
+        $subCtx->appFlags          = [];
+        $subCtx->validationErrors  = [];
+        $subCtx->requestData       = array_merge($data ?? [], $queryParams);
+        $subCtx->requestDataRead   = true;
+
         if ($method and in_array(strtolower($method), ['get', 'post', 'put', 'delete'])) {
-            $restore['method'] = static::$_method;
-            static::$_method = strtoupper($method);
+            $subCtx->requestMethod = strtoupper($method);
         }
         if ($headers) {
-            $restore['headers'] = static::$_headers;
-            static::$_headers = is_array(static::$_headers) ? array_merge(static::$_headers, $headers) : $headers;
+            $subCtx->headers = is_array($subCtx->headers) ? array_merge($subCtx->headers, $headers) : $headers;
         }
 
-        Application::Router()->routing($url);
-        $content = Application::Router()->getOut();
+        //--router/error não moram mais no RequestContext (ver ApplicationContextStorage),
+        //--então isolar a sub-chamada exige trocar as duas stores em conjunto.
+        $currentAppCtx = ApplicationContextStorage::current();
 
-        if (isset($restore['data']))    static::$_data    = $restore['data'];
-        if (isset($restore['headers'])) static::$_headers = $restore['headers'];
-        if (isset($restore['method']))  static::$_method  = $restore['method'];
+        ContextStorage::set($subCtx);
+        ApplicationContextStorage::set(new ApplicationContext());
+        try {
+            Application::setRouter(new $routerClass());
+            Application::Router()->routing($url);
+            $content = Application::Router()->getOut();
+        } finally {
+            //--Conexões de banco emprestadas do pool durante a sub-chamada precisam
+            //--ficar rastreadas no contexto real, senão nunca voltam pro pool no
+            //--fim da requisição de verdade (Connection::releaseAll roda só nele).
+            $current->dbConnections   = array_merge($current->dbConnections, $subCtx->dbConnections);
+            $current->dbPoolsBorrowed = array_merge($current->dbPoolsBorrowed, $subCtx->dbPoolsBorrowed);
+
+            ContextStorage::set($current);
+            ApplicationContextStorage::set($currentAppCtx);
+        }
 
         return $content;
     }

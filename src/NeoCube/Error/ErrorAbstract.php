@@ -26,7 +26,7 @@ abstract class ErrorAbstract implements ErrorInterface {
         else      return $this->error;
     }
 
-    final public function dispatch(\Throwable | array | string | null $error=null, ?ErrorType $type=null) :null {
+    final public function dispatch(\Throwable | array | string | null $error=null, ?ErrorType $type=null) :void {
         $this->type = $type ?: ErrorType::INTERNAL;
         if ($error instanceOf \Throwable){
             $this->error = array(
@@ -54,7 +54,6 @@ abstract class ErrorAbstract implements ErrorInterface {
             );
         }
         $this->onError();
-        return null;
     }
 
 }

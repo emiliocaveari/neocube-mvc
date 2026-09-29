@@ -3,21 +3,20 @@
 namespace NeoCube;
 
 use NeoCube\Helper\Date;
+use NeoCube\Http\ContextStorage;
 
 class Validate {
 
-    static array $_dataErros = [];
-
-
     static function clear(): void {
-        static::$_dataErros = [];
+        ContextStorage::current()->validationErrors = [];
     }
 
     static function getDataErrors(): array {
-        return static::$_dataErros;
+        return ContextStorage::current()->validationErrors;
     }
 
     static public function data(array $data, array $arguments): bool {
+        $ctx = ContextStorage::current();
         foreach ($arguments as $key => $argument) {
             if (!isset($data[$key])) $data[$key] = null;
             if (
@@ -26,15 +25,15 @@ class Validate {
                 isset($argument['file'])
             ) {
                 $validateValue = self::value($data[$key], $argument);
-                if ($validateValue !== true) static::$_dataErros[$key] = $validateValue;
+                if ($validateValue !== true) $ctx->validationErrors[$key] = $validateValue;
             } else {
                 foreach ($data[$key] as $k => $v) {
                     $validateValue = self::data([$k => $v], [$k => $argument]);
-                    if ($validateValue !== true) static::$_dataErros[$key] = $validateValue;
+                    if ($validateValue !== true) $ctx->validationErrors[$key] = $validateValue;
                 }
             }
         }
-        return (count(static::$_dataErros)) ? false : true;
+        return (count($ctx->validationErrors)) ? false : true;
     }
 
 

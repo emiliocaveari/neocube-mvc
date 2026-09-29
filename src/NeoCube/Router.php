@@ -4,6 +4,8 @@ namespace NeoCube;
 
 use NeoCube\Error\ErrorType;
 use NeoCube\Helper\Strings;
+use NeoCube\Http\ContextStorage;
+use NeoCube\Http\RequestTerminated;
 use NeoCube\View\ViewRenderInterface;
 
 class Router {
@@ -12,8 +14,8 @@ class Router {
     const MODE_URL_REQUIRED = 'urlRequired';
     const MODE_URL_EXPLODE  = 'urlExplode';
 
-    static protected array $url = [];
-    static protected string $publicDir = '/';
+    protected array $url = [];
+    protected string $publicDir = '/';
 
     protected bool $autoRedirectIndex = false;
     protected Response|ViewRenderInterface $outView;
@@ -24,28 +26,35 @@ class Router {
 
 
     final static public function getUrl(string $mode = self::MODE_URL_REQUIRED): mixed {
-        return self::$url[$mode] ?? self::$url[self::MODE_URL_REQUIRED];
+        $router = Application::Router();
+        if (!$router) return null;
+        return $router->url[$mode] ?? $router->url[self::MODE_URL_REQUIRED] ?? null;
     }
 
     final static public function getPublicUrl(): string {
-        return (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . static::$publicDir;
+        $server = ContextStorage::current()->server;
+        $publicDir = Application::Router()?->publicDir ?? '/';
+        return (isset($server['HTTPS']) ? 'https://' : 'http://') . ($server['HTTP_HOST'] ?? '') . $publicDir;
     }
 
     final static public function getPublicDir(): string {
-        return static::$publicDir;
+        return Application::Router()?->publicDir ?? '/';
     }
-    final static public function setPublicDir($public): void {
+    final public function setPublicDir(string $public): void {
         if (substr($public, -1, 1) != '/') $public .= '/';
-        static::$publicDir = $public;
-        self::urlGenerate();
+        $this->publicDir = $public;
     }
 
 
     static public function createLink(null|string $str_router = null, ?array $params = null) {
-        $url = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . static::$publicDir;
+        $router = Application::Router();
+        $publicDir = $router?->publicDir ?? '/';
+
+        $server = ContextStorage::current()->server;
+        $url = (isset($server['HTTPS']) ? 'https://' : 'http://') . ($server['HTTP_HOST'] ?? '') . $publicDir;
 
         if ($str_router === null)
-            $url .= self::$url[self::MODE_URL_BASE];
+            $url .= $router?->url[self::MODE_URL_BASE] ?? '';
         else if (!empty($str_router)) {
             if (substr($str_router, 0, 4) == 'http') {
                 $url = $str_router;
@@ -65,7 +74,7 @@ class Router {
 
 
     static public function redirect(array|string $controller, string|null $action = null, array|string|null $params = null): void {
-        if (php_sapi_name() == 'cli') return;
+        if (PHP_SAPI === 'cli' && !defined('NEOCUBE_HTTP_CONTEXT')) return;
         if (is_array($controller)) {
             $aux = $controller;
             $controller = array_shift($aux);
@@ -86,11 +95,13 @@ class Router {
                     }
                 } else $params = '/' . $params;
             }
-            $location = static::$publicDir . $controller . $action . $params;
+            $location = (Application::Router()?->publicDir ?? '/') . $controller . $action . $params;
         }
 
-        header("location: $location");
-        exit();
+        $ctx = ContextStorage::current();
+        $ctx->addResponseHeader("location: $location");
+        $ctx->setStatus(302);
+        throw new RequestTerminated();
     }
 
 
@@ -124,37 +135,38 @@ class Router {
     }
 
     final public function routing(?string $forceUrl = null): void {
-        if (empty(self::$url) or $forceUrl) self::urlGenerate($forceUrl);
+        if (empty($this->url) or $forceUrl) $this->urlGenerate($forceUrl);
         $this->Controller =  $this->selectController();
         $this->outView = $this->Controller->execute();
     }
 
-    final static protected function urlGenerate(?string $forceUrl = null): void {
+    final protected function urlGenerate(?string $forceUrl = null): void {
+        $server = ContextStorage::current()->server;
         $urlParse = $forceUrl
             ? parse_url($forceUrl)
-            : (isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI']) : '');
+            : (isset($server['REQUEST_URI']) ? parse_url($server['REQUEST_URI']) : '');
 
         $url = isset($urlParse['path']) ? $urlParse['path'] : '/';
         if (substr($url, -1, 1) != '/') $url .= '/';
 
-        if (static::$publicDir === '/') $url = substr($url, 1);
-        else $url = substr($url, strlen(static::$publicDir));
+        if ($this->publicDir === '/') $url = substr($url, 1);
+        else $url = substr($url, strlen($this->publicDir));
 
         $urlRequired = $url .
             (isset($urlParse['query']) ? '?' . $urlParse['query'] : '') .
             (isset($urlParse['fragment']) ? '#' . $urlParse['fragment'] : '');
 
-        self::$url = [
+        $this->url = [
             self::MODE_URL_REQUIRED => $urlRequired,
             self::MODE_URL_BASE     => $url ?: '',
             self::MODE_URL_EXPLODE  => $url ? array_filter(explode('/', trim("$url"))) : []
         ];
     }
 
-    
+
     final protected function sistemRouter(): Controller {
 
-        $urlExplode = self::$url[self::MODE_URL_EXPLODE] ?: ['index'];
+        $urlExplode = $this->url[self::MODE_URL_EXPLODE] ?: ['index'];
         $controller = null;
         $actions    = [];
 

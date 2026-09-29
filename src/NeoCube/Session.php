@@ -2,6 +2,8 @@
 
 namespace NeoCube;
 
+use NeoCube\Http\ContextStorage;
+use NeoCube\Session\SessionStoreInterface;
 use NeoCube\View;
 
 class Session {
@@ -14,28 +16,30 @@ class Session {
     private function __construct() {
     }
 
+    static protected function store(): SessionStoreInterface {
+        return ContextStorage::current()->sessionStore();
+    }
+
     static public function set(string $key, mixed $value): void {
-        $_SESSION[self::$_main][$key] = $value;
+        static::store()->set(self::$_main, $key, $value);
     }
 
     static public function get(string $key, bool $clear = false): mixed {
-        if (isset($_SESSION[self::$_main][$key])) {
-            $data = $_SESSION[self::$_main][$key];
-            if ($clear) unset($_SESSION[self::$_main][$key]);
+        $store = static::store();
+        if ($store->has(self::$_main, $key)) {
+            $data = $store->get(self::$_main, $key);
+            if ($clear) $store->unset(self::$_main, $key);
             return $data;
         }
         return false;
     }
 
     static public function has(string $key): bool {
-        if (isset($_SESSION[self::$_main][$key])) return true;
-        return false;
+        return static::store()->has(self::$_main, $key);
     }
 
     static public function clear(string $key): void {
-        if (isset($_SESSION[self::$_main][$key])) {
-            unset($_SESSION[self::$_main][$key]);
-        }
+        static::store()->unset(self::$_main, $key);
     }
 
     //-----------------------------------------------------------//
@@ -44,27 +48,30 @@ class Session {
 
     //--set Session Flash
     static public function setFlash(string|array $mensagem, string $key = 'default'): void {
-        $_SESSION[self::$_flash][$key][] = $mensagem;
+        $store = static::store();
+        $list = $store->get(self::$_flash, $key) ?: [];
+        $list[] = $mensagem;
+        $store->set(self::$_flash, $key, $list);
     }
     static public function hasFlash(string $key = 'default'): bool {
-        return isset($_SESSION[self::$_flash][$key]);
+        return static::store()->has(self::$_flash, $key);
     }
-    //--set Session Flash
+    //--get Session Flash
     static public function getFlash(string $key = 'default', bool $remove = true): string|array {
-        $arrMessage = '';
-        if (isset($_SESSION[self::$_flash][$key])) {
-            $arrMessage = $_SESSION[self::$_flash][$key];
-            if ($remove) unset($_SESSION[self::$_flash][$key]);
-        }
+        $store = static::store();
+        $arrMessage = $store->get(self::$_flash, $key) ?: '';
+        if ($arrMessage and $remove) $store->unset(self::$_flash, $key);
         return $arrMessage;
     }
     //--get Session Flash
     static public function flash(string|array $template, $key = 'default'): string {
 
-        if (isset($_SESSION[self::$_flash][$key])) {
+        $store = static::store();
 
-            $arrMessage = $_SESSION[self::$_flash][$key];
-            unset($_SESSION[self::$_flash][$key]);
+        if ($store->has(self::$_flash, $key)) {
+
+            $arrMessage = $store->get(self::$_flash, $key);
+            $store->unset(self::$_flash, $key);
 
             $htmlReturn = '';
 
@@ -107,8 +114,8 @@ class Session {
 
     //--clear Session Flash
     static public function clearFlash(?string $key = null): void {
-        if ($key !== null) unset($_SESSION[self::$_flash][$key]);
-        else unset($_SESSION[self::$_flash]);
+        if ($key !== null) static::store()->unset(self::$_flash, $key);
+        else static::store()->unsetBucket(self::$_flash);
     }
 
 
@@ -123,25 +130,24 @@ class Session {
             'expires' => $time,
             'content' => $content
         ]);
-        $_SESSION[self::$_cache][$key] = $content;
+        static::store()->set(self::$_cache, $key, $content);
     }
 
 
     static public function getCache(string $key): mixed {
-        if (isset($_SESSION[self::$_cache][$key])) {
-            $cache = unserialize($_SESSION[self::$_cache][$key]);
+        $store = static::store();
+        if ($store->has(self::$_cache, $key)) {
+            $cache = unserialize($store->get(self::$_cache, $key));
             if ($cache['expires'] > time()) {
                 return $cache['content'];
             } else {
-                unset($_SESSION[self::$_cache][$key]);
+                $store->unset(self::$_cache, $key);
             }
         }
         return null;
     }
 
     static public function clearCache(string $key): void {
-        if (isset($_SESSION[self::$_cache][$key])) {
-            unset($_SESSION[self::$_cache][$key]);
-        }
+        static::store()->unset(self::$_cache, $key);
     }
 }

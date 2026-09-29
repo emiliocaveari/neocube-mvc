@@ -5,12 +5,15 @@ namespace NeoCube\Db;
 use NeoCube\Application;
 use NeoCube\Db\Query\BuilderInferface;
 use NeoCube\Db\Query\MysqlBuilder;
+use NeoCube\Db\Query\PostgreBuilder;
 use NeoCube\Db\Query\Query;
 use NeoCube\Error\ErrorType;
 use NeoCube\View;
 use PDOStatement;
 use PDO;
 use PDOException;
+use Swoole\Database\PDOProxy;
+use Swoole\Database\PDOStatementProxy;
 
 class Mapper {
 
@@ -22,7 +25,7 @@ class Mapper {
     protected string $saveInfo  = '';
 
     protected ?string $_connection = null;
-    protected ?PDO $Db;
+    protected PDO|PDOProxy|null $Db;
 
     private ?Query $Query  = null;
     private ?BuilderInferface $Builder = null;
@@ -34,7 +37,7 @@ class Mapper {
     private array  $bindValues = [];
     private bool   $execute    = true;
 
-    private bool|PDOStatement $fetchStm = false;
+    private bool|PDOStatement|PDOStatementProxy $fetchStm = false;
     private int    $fetchMode  = PDO::FETCH_ASSOC;
     private string $fetchClass = 'stdClass';
 
@@ -49,7 +52,10 @@ class Mapper {
         $this->_alias = $alias ?: $this->_table;
 
         $this->Db = Connection::factory($this->_connection);
-        $this->Builder = new MysqlBuilder();
+        $this->Builder = match (Connection::getAdapter($this->_connection)) {
+            'postgre' => new PostgreBuilder(),
+            default   => new MysqlBuilder(),
+        };
 
         $this->Query = new Query($this->_table);
         if ($this->_alias != $this->_table) $this->Query->setAlias($this->_alias);
@@ -85,7 +91,7 @@ class Mapper {
     }
 
     private function selectFetchMode(&$stm): void {
-        if (!$stm instanceof PDOStatement) return;
+        if (!($stm instanceof PDOStatement or $stm instanceof PDOStatementProxy)) return;
         if (in_array($this->fetchMode, [PDO::FETCH_ASSOC, PDO::FETCH_OBJ]))
             $stm->setFetchMode($this->fetchMode);
         else
@@ -114,7 +120,7 @@ class Mapper {
 
     public function clear(string|array $type = ''): static {
         if (empty($type)) {
-            $clear = ['data', 'cols', 'where', 'order', 'limit', 'group', 'join', 'forupdate', 'onduplicatekey', 'bind', 'bindvalues'];
+            $clear = ['data', 'cols', 'where', 'order', 'limit', 'group', 'join', 'forupdate', 'duplicateKey', 'bind', 'bindvalues'];
         } else if (is_array($type)) {
             $clear = array_map('strtolower', $type);
         } else {
@@ -131,13 +137,13 @@ class Mapper {
         return $this;
     }
 
-    public function isSetParam(string $type = ''): bool {
+    public function hasParam(string $type = ''): bool {
         switch (strtolower($type)) {
             case 'bind':
             case 'bindvalues':
                 return !!count($this->bindValues);
             default:
-                return $this->Query->isSetParam($type);
+                return $this->Query->hasParam($type);
         }
     }
 
@@ -170,32 +176,47 @@ class Mapper {
         return $this;
     }
 
-    protected function executeSentence(array $input_parameters = []): bool|PDOStatement {
+    protected function executeSentence(array $input_parameters = []): bool|PDOStatement|PDOStatementProxy {
         if (!$this->execute) {
             $this->execute = true;
             return false;
         }
-        if (!empty($this->sentence)) {
-            try {
-                $query = $this->Db->prepare($this->sentence);
+        if (empty($this->sentence)) return false;
 
-                $input_parameters = array_merge($input_parameters, $this->bindValues);
-                foreach ($input_parameters as $k => $v)
-                    $query->bindValue($k, $v);
+        $input_parameters = array_merge($input_parameters, $this->bindValues);
 
-                $query->execute();
-                $this->rowCount = $query->rowCount();
-
-                return $query;
-            } catch (PDOException $e) {
-                $this->errorCode = $e->getCode();
-                $this->errorInfo = $e->errorInfo;
-                $this->onErrorLog($this->sentence, $input_parameters, $e);
-                return false;
+        try {
+            return $this->runStatement($input_parameters);
+        } catch (PDOException $e) {
+            //--"MySQL server has gone away": a conexão persistente do worker ficou
+            //--velha/foi derrubada pelo servidor. Reconecta uma vez e tenta de novo
+            //--antes de desistir (só faz sentido para a conexão persistente do FPM;
+            //--no pool do Swoole cada coroutine já pega uma conexão "fresca").
+            if (($e->errorInfo[1] ?? null) === 2006) {
+                $this->Db = Connection::factory($this->_connection);
+                try {
+                    return $this->runStatement($input_parameters);
+                } catch (PDOException $e) {
+                    // segue para o tratamento de erro comum abaixo
+                }
             }
-        } else {
+            $this->errorCode = $e->getCode();
+            $this->errorInfo = $e->errorInfo;
+            $this->onErrorLog($this->sentence, $input_parameters, $e);
             return false;
         }
+    }
+
+    private function runStatement(array $input_parameters): PDOStatement|PDOStatementProxy {
+        $query = $this->Db->prepare($this->sentence);
+
+        foreach ($input_parameters as $k => $v)
+            $query->bindValue($k, $v);
+
+        $query->execute();
+        $this->rowCount = $query->rowCount();
+
+        return $query;
     }
 
     public function rowCount(): int {
@@ -247,6 +268,14 @@ class Mapper {
         return $this;
     }
 
+    //--Pede RETURNING no próximo insert() (só tem efeito com PostgreBuilder).
+    //--Necessário pra ler o valor gerado quando não há sequence pra
+    //--Db::lastInsertId() capturar — ex: PK UUID via gen_random_uuid().
+    public function setReturning(string|array $cols): static {
+        $this->Query->setReturning($cols);
+        return $this;
+    }
+
     public function setJoin(string|Mapper $table, string $on = '', string $type = ''): static {
         $on = empty($on) ? [] : [$on];
         if ($table instanceof Mapper) {
@@ -270,26 +299,33 @@ class Mapper {
         return $this;
     }
 
-    public function onDuplicateKey(array $data): static {
-        $this->Query->onDuplicateKey($data);
+    public function setDuplicateKey(array $data, array $conflictColumns = []): static {
+        $this->Query->setDuplicateKey($data, $conflictColumns);
         return $this;
     }
 
-    public function insertMult(array $data, bool $upDuplicateKeys = false): bool {
-        $this->Query->setData($data)->onDuplicateKey($upDuplicateKeys);
+    public function insertMult(array $data, bool $upDuplicateKeys = false, array $conflictColumns = []): bool {
+        $this->Query->setData($data)->setDuplicateKey($upDuplicateKeys, $conflictColumns);
         $this->sentence = $this->Builder->insertMult($this->Query);
         $input_parameters = $this->Query->getSentenceData();
         return ($this->executeSentence($input_parameters)) ? true : false;
     }
 
-    public function insert(array $data): bool|int {
+    public function insert(array $data): bool|int|string|array {
         $this->Query->setData($data);
         $this->sentence = $this->Builder->insert($this->Query);
         $input_parameters = $this->Query->getSentenceData();
-        if ($this->executeSentence($input_parameters)) {
-            $lastId = $this->Db->lastInsertId();
-            return ($lastId !== false) ? $lastId : true;
-        } else return false;
+
+        $stm = $this->executeSentence($input_parameters);
+        if (!$stm) return false;
+
+        if ($this->Query->hasParam('returning')) {
+            $row = $stm->fetch(PDO::FETCH_ASSOC);
+            if ($row) return (count($row) === 1) ? reset($row) : $row;
+        }
+
+        $lastId = $this->Db->lastInsertId();
+        return ($lastId !== false) ? $lastId : true;
     }
 
     public function update(array $data): bool {
@@ -359,7 +395,7 @@ class Mapper {
             $this->fetchStm = $this->executeSentence();
             $this->selectFetchMode($this->fetchStm);
         }
-        if ($this->fetchStm instanceof PDOStatement)
+        if ($this->fetchStm instanceof PDOStatement or $this->fetchStm instanceof PDOStatementProxy)
             return $this->fetchStm->fetch();
         else
             return false;

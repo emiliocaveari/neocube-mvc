@@ -70,9 +70,9 @@ class MysqlBuilder implements BuilderInferface {
 
         $sentence = 'INSERT INTO ' . $queryParams->table . ' (' . implode(',', $keys_parameters) . ') VALUES (' . implode(',', $bind_parameters) . ')';
 
-        if ($queryParams->onDuplicateKey) {
+        if ($queryParams->duplicateKey) {
             $bindKeyValue = [];
-            foreach ($queryParams->onDuplicateKey as $key => $value) {
+            foreach ($queryParams->duplicateKey as $key => $value) {
                 $bindKey = ":dpkeyup" . str_replace('.', '', $key);
                 if ($value instanceof Closure) {
                     $closureRes = $value($bindKey, $queryParams->data);
@@ -132,7 +132,7 @@ class MysqlBuilder implements BuilderInferface {
 
         $sentence = 'INSERT INTO ' . $queryParams->table . ' (' . implode(',', $keys_parameters) . ') VALUES ' . implode(',', $bind_parameters);
 
-        if ($queryParams->onDuplicateKey) {
+        if ($queryParams->duplicateKey) {
             $onDuplicate = [];
             foreach ($keys_parameters as $value)
                 $onDuplicate[] = "{$value}=VALUES({$value})";
