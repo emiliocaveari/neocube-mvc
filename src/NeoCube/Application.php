@@ -12,15 +12,11 @@ final class Application{
 
     private function __construct(){}
 
-    //--AMBIENTE
-    const string ENVIRONMENT_DEV = 'DEV';
-    const string ENVIRONMENT_PRODUCTION = 'PRODUCTION';
-
     static public function setEnvironment(string $environment){
         Env::setValue('ENVIRONMENT',$environment);
     }
     static public function isEnvironment(string $environment){
-        return (Env::get('ENVIRONMENT',self::ENVIRONMENT_PRODUCTION) === $environment);
+        return (Env::get('ENVIRONMENT','PRODUCTION') === $environment);
     }
 
     static public function setRouter(Router $Router){
@@ -44,7 +40,7 @@ final class Application{
 
         //--Sob Swoole o processo é de vida longa: register_shutdown_function só dispara
         //--quando o WORKER morre, não a cada requisição, então é registrado uma única
-        //--vez no boot do worker (ver server.php) em vez de aqui.
+        //--vez no boot do worker (ver Runtime\SwooleRuntime) em vez de aqui.
         if (!defined('NEOCUBE_SWOOLE')) {
             register_shutdown_function(array('NeoCube\Error\Controller','shutdown'));
         }

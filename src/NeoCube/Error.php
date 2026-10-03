@@ -12,19 +12,10 @@ class Error extends ErrorAbstract {
         $error = $this->error;
         $type  = $this->type;
         if (ErrorType::SHUTDOWN == $type) return null;
-        if (Application::isEnvironment(Application::ENVIRONMENT_PRODUCTION)) {
-            ob_clean();
-            header('Content-Type: text/plain');
-            http_response_code(500);
-            header('status: 500');
-            echo 'Internal Server Error! Sorry!';
-            exit(0);
-        } else {
-            echo "NEOCUBE ERROR -> {$type->name}\n";
-            echo "Error\n";
-            echo "[{$error['code']}] {$error['message']}\n";
-            echo "Fatal error on line {$error['line']} in file {$error['file']}\n";
-            echo "PHP " . PHP_VERSION . " (" . PHP_OS . ")\n";
-        }
+
+        echo "NEOCUBE ERROR -> {$type->name}\n"
+            . "[{$error['code']}] {$error['message']}\n"
+            . "Fatal error on line {$error['line']} in file {$error['file']}\n"
+            . "PHP " . PHP_VERSION . " (" . PHP_OS . ")\n";
     }
 }

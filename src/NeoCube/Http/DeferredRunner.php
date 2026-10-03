@@ -2,6 +2,8 @@
 
 namespace NeoCube\Http;
 
+use NeoCube\Db\Connection;
+
 class DeferredRunner {
 
     //--Chamado pelo entrypoint logo após emitir a resposta (SwooleEmitter ou
@@ -19,7 +21,15 @@ class DeferredRunner {
             //--worker segue livre para o próximo request enquanto rodam.
             foreach ($tasks as $task) {
                 \Swoole\Coroutine::create(static function () use ($task) {
-                    static::runSafely($task);
+                    try {
+                        static::runSafely($task);
+                    } finally {
+                        //--A coroutine da tarefa tem um RequestContext próprio: devolve
+                        //--aos pools as conexões de banco que ela emprestou, senão o
+                        //--pool se esgota depois de algumas tarefas.
+                        Connection::releaseAll(ContextStorage::current());
+                        ContextStorage::clear();
+                    }
                 });
             }
             return;

@@ -2,72 +2,42 @@
 
 namespace NeoCube;
 
+use NeoCube\Cache\CacheManager;
+use NeoCube\Cache\CacheStoreInterface;
+
 class Cache {
 
+	protected CacheStoreInterface $store;
 
+	//--$folder só se aplica ao backend em arquivo; com CACHE_DRIVER=redis
+	//--ele é ignorado. Um $store explícito tem prioridade sobre os dois.
 	public function __construct(
-		protected ?string $folder = null,
-		protected string $time = '5 minutes'
+		?string $folder = null,
+		protected string $time = '5 minutes',
+		?CacheStoreInterface $store = null
 	) {
-		if (!$this->folder)
-			$this->folder = Env::getValue('NEOCUBE_CACHE_PATH') ?: sys_get_temp_dir();
-		if (is_numeric($this->time)) 
+		if (is_numeric($this->time))
 			$this->time .= ' seconds';
+		$this->store = $store ?? CacheManager::create($folder);
 	}
 
-	final protected function generateFileLocation(string $key): string {
-		return $this->folder . DIRECTORY_SEPARATOR . sha1($key) . '.tmp';
-	}
-
-	final protected function createCacheFile(string $key, string $content): bool {
-		if (!file_exists($this->folder) or !is_dir($this->folder) or !is_writable($this->folder)) {
-			Application::ErrorReporting()->dispatch([
-				'message' => 'Unable to access the cache folder "' . $this->folder . '"',
-				'file'    => __FILE__,
-				'line'    => 20,
-			]);
-			return false;
-		}
-		$filename = $this->generateFileLocation($key);
-		try {
-			$create = (bool) file_put_contents($filename, $content);
-		} catch (\Throwable $th) {
-			Application::ErrorReporting()->dispatch($th);
-			$create = false;
-		}
-		return $create;
+	//--Converte o tempo ("10 minutes", "1 hour", ou segundos numéricos) em TTL.
+	final protected function ttl(?string $time): int {
+		$expires = ($time)
+			? (is_numeric($time) ? strtotime($time . ' seconds') : strtotime($time))
+			: strtotime($this->time);
+		return max(1, (int) $expires - time());
 	}
 
 	final public function save(string $key, mixed $content, ?string $time = null): bool {
-		$expires = ($time) 
-			? (is_numeric($time) ? strtotime($time . ' seconds') : strtotime($time))
-			: strtotime($this->time);
-		
-		$content = serialize(array(
-			'expires' => $expires,
-			'content' => $content
-		));
-		return $this->createCacheFile($key, $content);
+		return $this->store->set($key, $content, $this->ttl($time));
 	}
 
 	final public function read(string $key): mixed {
-		$filename = $this->generateFileLocation($key);
-		if (file_exists($filename) && is_readable($filename)) {
-			$cache = unserialize(file_get_contents($filename));
-			if ($cache['expires'] > time()) {
-				return $cache['content'];
-			} else {
-				unlink($filename);
-			}
-		}
-		return false;
+		return $this->store->get($key);
 	}
 
 	final public function clear(string $key): bool {
-		$filename = $this->generateFileLocation($key);
-		if (file_exists($filename) && is_readable($filename)) {
-			return unlink($filename);
-		}
-		return true;
+		return $this->store->delete($key);
 	}
 }
