@@ -2,6 +2,7 @@
 
 namespace NeoCube\Http;
 
+use NeoCube\Env;
 use NeoCube\Session\SessionManager;
 use NeoCube\Session\SessionStoreInterface;
 
@@ -56,7 +57,16 @@ class RequestContext {
         $ctx->server  = $_SERVER;
         $ctx->rawBody = file_get_contents('php://input') ?: '';
         $ctx->headers = function_exists('getallheaders') ? (getallheaders() ?: []) : [];
+        if (self::forceHttps()) $ctx->server['HTTPS'] = 'on';
         return $ctx;
+    }
+
+    //--NEOCUBE_FORCE_HTTPS=1: toda requisição é tratada como HTTPS (URLs absolutas
+    //--do Router, como createLink(), saem com https://), sem depender do
+    //--X-Forwarded-Proto. Para quando o TLS termina antes de um proxy que
+    //--repassa o esquema errado (ex.: DMZ HTTPS -> nginx interno HTTP)
+    private static function forceHttps(): bool {
+        return filter_var(Env::getValue('NEOCUBE_FORCE_HTTPS'), FILTER_VALIDATE_BOOLEAN);
     }
 
     public static function fromSwooleRequest(\Swoole\Http\Request $request): static {
@@ -84,6 +94,11 @@ class RequestContext {
         $server['CONTENT_LENGTH']  = (int) ($ctx->headers['content-length'] ?? 0);
         if (isset($ctx->headers['host'])) $server['HTTP_HOST'] = $ctx->headers['host'];
         if (isset($swServer['https']) && $swServer['https']) $server['HTTPS'] = 'on';
+        //--atrás de proxy/túnel que termina o TLS (Cloudflare Tunnel, ngrok, nginx) o
+        //--Swoole recebe HTTP puro: o esquema original vem no X-Forwarded-Proto
+        //--(pode trazer lista "https,http" — vale o primeiro, do cliente)
+        $proto = strtolower(trim(explode(',', (string) ($ctx->headers['x-forwarded-proto'] ?? ''))[0]));
+        if ($proto === 'https' or self::forceHttps()) $server['HTTPS'] = 'on';
 
         $ctx->server = $server;
 
@@ -106,8 +121,23 @@ class RequestContext {
         $this->responseHeaders[] = $header;
     }
 
-    public function addCookie(string $name, string $value, int $expire, string $path = '/', bool $clear = false): void {
-        $this->responseCookies[] = compact('name', 'value', 'expire', 'path', 'clear');
+    //--$options (opcional): 'httponly' => bool, 'secure' => bool,
+    //--'samesite' => 'Lax'|'Strict'|'None', 'domain' => string. Sem $options o
+    //--cookie sai exatamente como antes (sem esses atributos).
+    //--O mesmo cookie (nome + path) definido de novo substitui o anterior.
+    public function addCookie(string $name, string $value, int $expire, string $path = '/', bool $clear = false, array $options = []): void {
+        $options = CookieOptions::normalize($options);
+
+        $this->responseCookies = array_values(array_filter(
+            $this->responseCookies,
+            fn(array $cookie) => $cookie['name'] !== $name or $cookie['path'] !== $path
+        ));
+        $this->responseCookies[] = compact('name', 'value', 'expire', 'path', 'clear', 'options');
+    }
+
+    //--A sessão foi usada nesta requisição? (sem criá-la)
+    public function hasSessionStore(): bool {
+        return $this->sessionStoreInstance !== null;
     }
 
     public function setBody(string $body): void {

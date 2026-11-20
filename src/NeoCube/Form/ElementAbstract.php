@@ -7,6 +7,7 @@ abstract class ElementAbstract {
     protected array $attr        = array();
     protected array $attrLabel   = array();
     protected array $attrError   = array();
+    protected ?string $errorMessage = null;
     protected bool|string $label = '';
     protected string $type       = '';
 
@@ -33,7 +34,8 @@ abstract class ElementAbstract {
         'options',
         'rows',
         'title',
-        'error'
+        'error',
+        'errormessage'
     );
 
 
@@ -252,9 +254,18 @@ abstract class ElementAbstract {
         }
     }
 
+    //--Texto que substitui a mensagem padrão quando o campo não passa na validação
+    public function errorMessage(?string $val = null): string|null|static {
+        if ($val === null) return $this->errorMessage;
+        $this->errorMessage = $val;
+        return $this;
+    }
+
     public function error(null|false|array $val = null): static | array {
         if ($val === null) {
-            return $this->attrError;
+            return ($this->attrError and $this->errorMessage !== null)
+                ? ['message' => $this->errorMessage] + $this->attrError
+                : $this->attrError;
         } else {
             if ($val !== false) $this->attrError = $val;
             else  $this->attrError = [];

@@ -171,6 +171,23 @@ class Mapper {
         return $this->sentence;
     }
 
+    //--Executa SQL cru sem leitura de resultado (INSERT/UPDATE/DELETE que o Query
+    //--Builder não modela: ON CONFLICT DO NOTHING, expressões, subquery). Mesmo
+    //--caminho das demais operações: erro vai para onErrorLog (log + rollback),
+    //--getError()/getErrorCode() e noExecute()/getSentence() funcionam. Usa só
+    //--$bindValues (descarta binds anteriores) e, depois de executar, limpa binds
+    //--e sentença para não vazarem na próxima operação do Model; linhas afetadas
+    //--em rowCount(). Leitura com SQL cru fica no Model: reset() + setSentence() +
+    //--setBindValues() + fetchAll()
+    public function execute(string $sentence, array $bindValues = []): bool {
+        //--noExecute(): só monta, e a sentença fica para o getSentence()
+        $inspecao = !$this->execute;
+        $this->clear('bindvalues')->setSentence($sentence)->setBindValues($bindValues);
+        $ok = $this->executeSentence() !== false;
+        if (!$inspecao) $this->clear('bindvalues');
+        return $ok;
+    }
+
     public function noExecute(): static {
         $this->execute = false;
         return $this;
@@ -390,8 +407,11 @@ class Mapper {
 
 
     public function fetch(): bool|array|object {
-        if (empty($this->sentence) or $this->fetchStm === false) {
-            $this->sentence  = $this->Builder->select($this->Query);
+        //--1ª chamada executa; as seguintes leem o mesmo statement. Sentença já
+        //--definida (setSentence) é usada como está, igual ao fetchAll()
+        if ($this->fetchStm === false) {
+            if (empty($this->sentence))
+                $this->sentence = $this->Builder->select($this->Query);
             $this->fetchStm = $this->executeSentence();
             $this->selectFetchMode($this->fetchStm);
         }

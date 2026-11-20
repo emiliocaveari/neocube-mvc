@@ -25,6 +25,11 @@ class NativePhpSessionStore implements SessionStoreInterface {
         unset($_SESSION[$bucket]);
     }
 
+    public function regenerate(): ?string {
+        if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+        return null;
+    }
+
     public function persist(): void {
         //--PHP persiste a sessão nativa sozinho no shutdown do processo (FPM).
     }

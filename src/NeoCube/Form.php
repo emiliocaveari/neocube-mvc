@@ -29,6 +29,9 @@ class Form {
 
     protected array $mapElements = [];
 
+    //--csrf(): inclui o campo _csrf no open() e exige token válido no validate()
+    protected bool $csrf = false;
+
 
     public function __construct(array $attr) {
         $this->attr = $attr;
@@ -353,6 +356,7 @@ class Form {
                 else          $return .= $key . '="' . $val . '" ';
             }
             $return .= '>' . PHP_EOL;
+            if ($this->usesCsrf()) $return .= Csrf::field() . PHP_EOL;
             $this->open = true;
             return $return;
         } else {
@@ -428,7 +432,33 @@ class Form {
     }
 
 
+    //--Proteção CSRF do formulário (opt-in). Só vale para método diferente de GET
+    final public function csrf(bool $enabled = true): static {
+        $this->csrf = $enabled;
+        return $this;
+    }
+
+    //--O validate() falhou pelo token CSRF (sessão expirada, formulário aberto
+    //--há muito tempo ou envio de outro site)?
+    final public function csrfInvalid(): bool {
+        return isset($this->error[Csrf::FIELD]);
+    }
+
+    private function usesCsrf(): bool {
+        return $this->csrf and strtoupper($this->method()) !== 'GET';
+    }
+
     public function validate(array $arguments = []): bool {
+        //--Nada enviado com o método do formulário (ex.: a tela abrindo por GET):
+        //--não há o que validar nem erro de CSRF a acusar
+        if (!$this->request()) return false;
+
+        if ($this->usesCsrf() and !Csrf::isValid()) {
+            $this->error[Csrf::FIELD] = 'invalid';
+            $this->registerValues();
+            return false;
+        }
+
         if (!$arguments) $arguments = $this->getElementsParamsValidate();
         if (Validate::data($this->requestValues(), $arguments)) {
             return true;

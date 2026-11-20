@@ -41,29 +41,32 @@ class Env {
     }
 
 
-    static public function get(array | string $value, string $defaultEmpty = '') {
-        return match (true) {
-            is_string($value) => self::getValue($value),
-            is_array($value)  => self::getValues($value),
-            default => null
-        } ?: $defaultEmpty;
-    }
-
-    static public function getValue(string $name) {
+    //--Valor da variável: o do .env já convertido (true/false/null/número) ou o
+    //--texto do ambiente (docker). null se ela não existe ou está vazia (null / '');
+    //--false e 0 do .env são valores.
+    static public function getValue(string $name): mixed {
         $name = self::processName($name);
-        return $_ENV[$name] ?? getenv($name);
+        if (array_key_exists($name, $_ENV)) $value = $_ENV[$name];
+        else if (($value = getenv($name)) === false) return null;
+        return $value === '' ? null : $value;
     }
 
+    //--getValue() com $default para variável ausente ou vazia. Com array:
+    //--getValues(), ou $default se nenhuma estiver preenchida
+    static public function get(array | string $value, mixed $default = ''): mixed {
+        if (is_array($value)) return self::getValues($value) ?: $default;
+        return self::getValue($value) ?? $default;
+    }
+
+    //--Só as variáveis preenchidas, mantendo as chaves do array informado
+    //--ou reindexando se for lista
     static public function getValues(array $names): array {
         $values = [];
-        $isList = array_is_list($names);
         foreach ($names as $key => $name) {
-            $value = static::getValue($name);
-            if (!$value and $value !== false) continue;
-            if ($isList) $values[] = $value;
-            else $values[$key] = $value;
+            $value = self::getValue($name);
+            if ($value !== null) $values[$key] = $value;
         }
-        return $values;
+        return array_is_list($names) ? array_values($values) : $values;
     }
 
     static public function setValue(string $name, mixed $value) {

@@ -66,7 +66,9 @@ class Postgre implements AdapterInterface {
     }
 
     static private function connect($db): PDO {
-        $PDO = new PDO("pgsql:dbname={$db['dbname']} host={$db['host']}", $db['username'], $db['password']);
+        //--Mesma porta padrão do pool do Swoole (getConnection)
+        $port = (int) ($db['port'] ?? 5432);
+        $PDO = new PDO("pgsql:dbname={$db['dbname']} host={$db['host']} port={$port}", $db['username'], $db['password']);
         $PDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $PDO;
     }

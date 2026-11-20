@@ -38,11 +38,6 @@ class Request {
             $data[$key] = $file;
         }
 
-        if (isset($data['_method'])) {
-            $ctx->requestMethod = strtoupper(trim($data['_method']));
-            unset($data['_method']);
-        }
-
         $ctx->requestData = $data;
         $ctx->requestDataRead = true;
     }

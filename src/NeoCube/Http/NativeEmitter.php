@@ -10,8 +10,12 @@ class NativeEmitter {
         http_response_code($ctx->responseStatus);
 
         foreach ($ctx->responseCookies as $cookie) {
-            if ($cookie['clear']) setcookie($cookie['name'], '', time() - 3600, $cookie['path']);
-            else setcookie($cookie['name'], $cookie['value'], $cookie['expire'], $cookie['path']);
+            $params = [
+                'expires' => $cookie['clear'] ? time() - 3600 : $cookie['expire'],
+                'path'    => $cookie['path'],
+            ] + $cookie['options'];
+
+            setcookie($cookie['name'], $cookie['clear'] ? '' : $cookie['value'], $params);
         }
 
         echo $ctx->responseBody;

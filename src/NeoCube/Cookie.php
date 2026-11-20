@@ -9,9 +9,11 @@ class Cookie {
     private function __construct() {}
 
 
-    static public function set(string $key, string $value, int|string $expire, string $path = '/'): bool {
+    //--$options (opcional): 'httponly' => bool, 'secure' => bool,
+    //--'samesite' => 'Lax'|'Strict'|'None', 'domain' => string
+    static public function set(string $key, string $value, int|string $expire, string $path = '/', array $options = []): bool {
         $expire = is_int($expire) ? time() + $expire : strtotime($expire);
-        ContextStorage::current()->addCookie($key, $value, $expire, $path, false);
+        ContextStorage::current()->addCookie($key, $value, $expire, $path, false, $options);
         return true;
     }
 
@@ -29,10 +31,11 @@ class Cookie {
         return isset(ContextStorage::current()->cookies[$key]);
     }
 
-    static public function clear(string $key, string $path = '/'): bool {
+    //--Para apagar, path e domain precisam ser os mesmos usados no set()
+    static public function clear(string $key, string $path = '/', array $options = []): bool {
         $ctx = ContextStorage::current();
         if (isset($ctx->cookies[$key])) {
-            $ctx->addCookie($key, '', time() - 3600, $path, true);
+            $ctx->addCookie($key, '', time() - 3600, $path, true, $options);
         }
         return true;
     }

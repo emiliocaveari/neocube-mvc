@@ -14,6 +14,10 @@ interface SessionStoreInterface {
 
     public function unsetBucket(string $bucket): void;
 
+    //--Troca o id mantendo os dados e invalida o id anterior (ver Session::regenerate()).
+    //--Devolve o id novo, ou null se o backend já cuida do cookie (sessão nativa).
+    public function regenerate(): ?string;
+
     //--Persiste a sessão no backend. Chamado ao final de cada requisição.
     public function persist(): void;
 }

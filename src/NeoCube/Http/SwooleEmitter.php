@@ -13,11 +13,18 @@ class SwooleEmitter {
         }
 
         foreach ($ctx->responseCookies as $cookie) {
-            if ($cookie['clear']) {
-                $response->cookie($cookie['name'], '', time() - 3600, $cookie['path']);
-            } else {
-                $response->cookie($cookie['name'], $cookie['value'], $cookie['expire'], $cookie['path']);
-            }
+            //--sem options, os padrões abaixo são os mesmos do Swoole: sai igual a antes
+            $o = $cookie['options'];
+            $response->cookie(
+                $cookie['name'],
+                $cookie['clear'] ? '' : $cookie['value'],
+                $cookie['clear'] ? time() - 3600 : $cookie['expire'],
+                $cookie['path'],
+                (string) ($o['domain'] ?? ''),
+                (bool) ($o['secure'] ?? false),
+                (bool) ($o['httponly'] ?? false),
+                (string) ($o['samesite'] ?? ''),
+            );
         }
 
         $response->end($ctx->responseBody);

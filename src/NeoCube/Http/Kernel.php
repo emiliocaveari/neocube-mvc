@@ -6,6 +6,7 @@ use NeoCube\Application;
 use NeoCube\Bootstrap\AppConfig;
 use NeoCube\Env;
 use NeoCube\Error\ErrorType;
+use NeoCube\Session\SessionManager;
 
 //--Núcleo comum aos runtimes FPM e Swoole: preparação do ambiente (boot) e
 //--o tratamento de uma requisição já convertida em RequestContext (handle).
@@ -40,6 +41,8 @@ final class Kernel {
             "PATH_SOURCE" => $this->config->sourcePath,
         ]);
 
+        SessionManager::useCookieOptions($this->config->sessionCookie);
+
         if ($timezone = $this->config->timezone ?: Env::get('TIMEZONE')) {
             date_default_timezone_set($timezone);
         }
@@ -69,6 +72,12 @@ final class Kernel {
                 Application::ErrorReporting()->dispatch($e, ErrorType::SHUTDOWN);
             } catch (RequestTerminated) {
                 //--Resposta já foi montada no contexto pelo próprio error handler.
+            } catch (\Throwable $handlerError) {
+                //--O próprio error handler falhou (ex.: usa a sessão e o Redis está
+                //--fora do ar). Sob Swoole, exceção não tratada aqui derrubaria o worker.
+                error_log('[NeoCube\Kernel] error handler failed: ' . $handlerError->getMessage() . ' (original: ' . $e->getMessage() . ')');
+                $ctx->setStatus(500);
+                $ctx->setBody('Internal Server Error');
             }
         }
     }

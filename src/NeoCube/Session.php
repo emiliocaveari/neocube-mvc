@@ -3,6 +3,7 @@
 namespace NeoCube;
 
 use NeoCube\Http\ContextStorage;
+use NeoCube\Session\SessionManager;
 use NeoCube\Session\SessionStoreInterface;
 use NeoCube\View;
 
@@ -18,6 +19,11 @@ class Session {
 
     static protected function store(): SessionStoreInterface {
         return ContextStorage::current()->sessionStore();
+    }
+
+    //--Troca o id da sessão mantendo os dados. Chamar no login e no logout.
+    static public function regenerate(): void {
+        SessionManager::regenerate(ContextStorage::current());
     }
 
     static public function set(string $key, mixed $value): void {

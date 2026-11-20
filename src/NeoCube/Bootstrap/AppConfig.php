@@ -4,12 +4,14 @@ namespace NeoCube\Bootstrap;
 
 use InvalidArgumentException;
 use NeoCube\Error\ErrorAbstract;
+use NeoCube\Http\CookieOptions;
 use NeoCube\Router;
 
 //--Configuração de um módulo da aplicação compartilhada
 //--pelos runtimes FPM e Swoole. Por convenção tudo é deduzido de $module:
 //--  {$module}\Router, {$module}\Error, src/{$module}/Views/ e src/{$module}/Views/Layouts/
-//--mas qualquer item pode ser sobrescrito por argumento nomeado.
+//--e o .env fica na raiz do projeto ($basePath/.env), mas qualquer item pode
+//--ser sobrescrito por argumento nomeado.
 final class AppConfig {
 
     public readonly string $sourcePath;
@@ -33,9 +35,19 @@ final class AppConfig {
         public readonly ?string $timezone = null,
         //--null = não mexe no display_errors do php.ini.
         public readonly ?bool $displayErrors = null,
+        //--true = a sessão só é criada/persistida (e o cookie de sessão só é
+        //--enviado) quando a requisição usa a sessão. false (padrão) mantém o
+        //--comportamento antigo: toda requisição abre e persiste a sessão.
+        //--Útil para APIs sem sessão (ex.: autenticação por token).
+        public readonly bool $lazySession = false,
+        //--Atributos do cookie de sessão desta aplicação: 'httponly' => bool,
+        //--'secure' => bool, 'samesite' => 'Lax'|'Strict'|'None', 'domain' => string.
+        //--[] = cookie sem esses atributos. SESSION_COOKIE_* no .env têm
+        //--prioridade (ver Session\SessionManager::cookieOptions()).
+        public readonly array $sessionCookie = [],
     ) {
         $this->sourcePath  = rtrim($sourcePath ?? $basePath . '/src', '/');
-        $this->envFile     = $envFile ?? $this->sourcePath . '/.env';
+        $this->envFile     = $envFile ?? rtrim($basePath, '/') . '/.env';
         $this->routerClass = $routerClass ?? $module . '\\Router';
         $this->errorClass  = $errorClass ?? $module . '\\Error';
         $this->viewPath    = $viewPath ?? "{$this->sourcePath}/{$module}/Views/";
@@ -48,5 +60,6 @@ final class AppConfig {
         if (!is_subclass_of($this->errorClass, ErrorAbstract::class)) {
             throw new InvalidArgumentException("Error class \"{$this->errorClass}\" must extend " . ErrorAbstract::class);
         }
+        CookieOptions::normalize($this->sessionCookie);
     }
 }

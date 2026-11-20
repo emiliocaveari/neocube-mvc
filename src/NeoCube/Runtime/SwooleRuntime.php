@@ -48,6 +48,9 @@ final class SwooleRuntime {
         $sessionDriver = Env::get('SESSION_DRIVER', 'table');
         $cacheDriver   = Env::get('CACHE_DRIVER', 'file');
 
+        //--A tabela existe também com lazySession (Api: sessão só nas rotas que a
+        //--usam, como o login pelo Keycloak); lazySession só evita abrir/persistir
+        //--sessão em requisição que não toca nela
         if ($sessionDriver === 'table') {
             //--Swoole\Table precisa ser criada ANTES do fork dos workers para
             //--ficar em memória compartilhada entre todos eles.
@@ -80,11 +83,18 @@ final class SwooleRuntime {
             //--segurança para crash do worker inteiro.
             register_shutdown_function(['NeoCube\Error\Controller', 'shutdown']);
 
-            if ($workerId === 0 && $sessionDriver === 'table') {
+            if ($workerId === 0 && SessionManager::isTableMode()) {
                 \Swoole\Timer::tick(60_000, fn() => SessionManager::gc());
             }
 
             foreach ($this->onWorkerStart as $callback) $callback($server, $workerId);
+        });
+
+        //--No desligamento/reload o worker só sai quando o event loop esvazia: o
+        //--timer do GC de sessão (worker 0) o mantinha vivo até o Swoole forçar
+        //--a saída ("worker exit timeout, forced termination")
+        $server->on('workerExit', function () {
+            \Swoole\Timer::clearAll();
         });
 
         $server->on('request', function (Request $request, Response $response) {
@@ -98,19 +108,34 @@ final class SwooleRuntime {
             try {
                 $this->kernel->handle($ctx);
             } finally {
-                $ctx->sessionStore()->persist();
-                Connection::releaseAll($ctx);
+                //--Cada etapa isolada: falha em uma (ex.: Redis fora do ar ao persistir
+                //--a sessão) não pode impedir de devolver as conexões ao pool nem de
+                //--responder ao cliente.
+                $this->runStep('persist session', function () use ($ctx) {
+                    //--lazySession: requisição que não tocou na sessão não cria uma
+                    if (!$this->kernel->config()->lazySession or $ctx->hasSessionStore())
+                        $ctx->sessionStore()->persist();
+                });
+                $this->runStep('release connections', fn() => Connection::releaseAll($ctx));
 
-                SwooleEmitter::emit($response, $ctx);
+                $this->runStep('emit response', fn() => SwooleEmitter::emit($response, $ctx));
 
                 //--Depois do emit: o cliente já recebeu a resposta.
-                DeferredRunner::flush($ctx);
+                $this->runStep('flush deferred', fn() => DeferredRunner::flush($ctx));
 
                 ContextStorage::clear();
             }
         });
 
         $server->start();
+    }
+
+    private function runStep(string $step, callable $callback): void {
+        try {
+            $callback();
+        } catch (\Throwable $e) {
+            error_log("[NeoCube\\SwooleRuntime] {$step}: {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}");
+        }
     }
 
     private function defaultSettings(): array {
